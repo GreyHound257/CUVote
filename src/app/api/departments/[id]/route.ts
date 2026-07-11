@@ -71,7 +71,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         ...(name && { name }),
         ...(code && { code }),
         ...(description !== undefined && { description }),
-        ...(status && { status: status as "ACTIVE" | "INACTIVE" | "DELETED" }),
+        ...(status && { status }), // Prisma now knows this is valid
         ...(facultyId !== undefined && { facultyId }),
       },
     });
@@ -102,9 +102,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const existing = await prisma.department.findUnique({ where: { id } });
     if (!existing) return errorResponse("Department not found", 404);
 
-    // TODO: When students and elections exist, check for linked records here.
-    // If linked records exist, we might want to return an error suggesting DEACTIVATION instead.
-    // For now, implement soft delete.
+    // Soft delete implementation
     const deleted = await prisma.department.update({
       where: { id },
       data: { status: "DELETED" },
@@ -158,7 +156,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const updated = await prisma.department.update({
       where: { id },
-      data: { status: newStatus as "ACTIVE" | "INACTIVE" | "DELETED" },
+      data: { status: newStatus },
     });
 
     await logAuditAction(
