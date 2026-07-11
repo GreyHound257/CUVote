@@ -47,7 +47,7 @@ model VerificationToken {
 }
 
 // -----------------------------------------------------------------------------
-// Application Models
+// Foundational Application Models
 // -----------------------------------------------------------------------------
 
 enum Role {
@@ -56,25 +56,46 @@ enum Role {
   STUDENT
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
   passwordHash  String?
-  role          Role      @default(STUDENT)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          Role       @default(STUDENT)
+  status        UserStatus @default(ACTIVE)
+  lastLogin     DateTime?
+  departmentId  String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  student       Student?
-  auditLogs     AuditLog[]
-  notifications Notification[]
+  accounts  Account[]
+  sessions  Session[]
+  auditLogs AuditLog[]
+
+  department Department? @relation("DepartmentAdmins", fields: [departmentId], references: [id], onDelete: SetNull)
+
+  student Student?
 }
 
-model Department {
+// -----------------------------------------------------------------------------
+// Department Management Module
+// -----------------------------------------------------------------------------
+
+enum DepartmentStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+model Faculty {
   id          String   @id @default(cuid())
   name        String   @unique
   code        String   @unique
@@ -82,125 +103,70 @@ model Department {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  students    Student[]
-  elections   Election[]
+  departments Department[]
 }
 
-model Student {
-  id             String     @id @default(cuid())
-  matricNumber   String     @unique
-  userId         String     @unique
-  departmentId   String
-  isEligible     Boolean    @default(true)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-
-  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  department     Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  ballots        Ballot[]
-  candidates     Candidate[]
-}
-
-enum ElectionStatus {
-  DRAFT
-  SCHEDULED
-  PUBLISHED
-  VOTING_OPEN
-  VOTING_CLOSED
-  RESULTS_GENERATED
-  PUBLISHED_RESULTS
-  ARCHIVED
-}
-
-model Election {
-  id           String         @id @default(cuid())
-  title        String
-  description  String?
-  departmentId String
-  status       ElectionStatus @default(DRAFT)
-  startTime    DateTime?
-  endTime      DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  department   Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  positions    ElectionPosition[]
-  ballots      Ballot[]
-}
-
-model ElectionPosition {
-  id          String   @id @default(cuid())
-  electionId  String
-  title       String
+model Department {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  code        String           @unique
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      DepartmentStatus @default(ACTIVE)
+  facultyId   String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
-  election    Election    @relation(fields: [electionId], references: [id], onDelete: Cascade)
-  candidates  Candidate[]
-  votes       Vote[]
-}
+  faculty Faculty? @relation(fields: [facultyId], references: [id], onDelete: SetNull)
 
-model Candidate {
-  id         String   @id @default(cuid())
-  positionId String
-  studentId  String
-  manifesto  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  administrators User[] @relation("DepartmentAdmins")
 
-  position   ElectionPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
-  student    Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  votes      Vote[]
+  students Student[]
 
-  @@unique([positionId, studentId])
-}
-
-model Ballot {
-  id         String   @id @default(cuid())
-  electionId String
-  studentId  String
-  submittedAt DateTime @default(now())
-
-  election   Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
-  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  votes      Vote[]
-
-  @@unique([electionId, studentId])
-}
-
-model Vote {
-  id         String   @id @default(cuid())
-  ballotId   String
-  positionId String
-  candidateId String
-  createdAt  DateTime @default(now())
-
-  ballot     Ballot           @relation(fields: [ballotId], references: [id], onDelete: Cascade)
-  position   ElectionPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
-  candidate  Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-
-  @@unique([ballotId, positionId])
+  // Placeholder relationships for future modules
+  // elections Election[]
 }
 
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
   action    String
+  entity    String?
+  entityId  String?
   details   String?  @db.Text
   ipAddress String?
   createdAt DateTime @default(now())
 
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  message   String   @db.Text
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+// -----------------------------------------------------------------------------
+// Student Management Module
+// -----------------------------------------------------------------------------
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  GRADUATED
+}
+
+model Student {
+  id           String        @id @default(cuid())
+  matricNo     String        @unique
+  fullName     String
+  email        String        @unique
+  level        Int
+  isEligible   Boolean       @default(true)
+  status       StudentStatus @default(ACTIVE)
+  departmentId String
+  userId       String?       @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id])
+  user       User?      @relation(fields: [userId], references: [id])
+
+  @@index([matricNo])
+  @@index([email])
+  @@index([departmentId])
 }
