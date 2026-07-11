@@ -17,6 +17,7 @@ import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { TopNav } from "@/components/layout/TopNav";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toaster } from "sonner";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
   title: "CUVote - Secure Voting Platform",
@@ -35,25 +36,27 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <TooltipProvider>
-            <div className="flex flex-col h-screen">
-              <TopNav />
-              <div className="flex flex-1 overflow-hidden">
-                <Sidebar />
-                <main className="flex-1 overflow-y-auto p-4 md:p-8">
-                  {children}
-                </main>
+        <SessionProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <TooltipProvider>
+              <div className="flex flex-col h-screen">
+                <TopNav />
+                <div className="flex flex-1 overflow-hidden">
+                  <Sidebar />
+                  <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                    {children}
+                  </main>
+                </div>
               </div>
-            </div>
-            <Toaster />
-          </TooltipProvider>
-        </ThemeProvider>
+              <Toaster />
+            </TooltipProvider>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

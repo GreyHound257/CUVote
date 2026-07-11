@@ -56,17 +56,82 @@ enum Role {
   STUDENT
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
   passwordHash  String?
-  role          Role      @default(STUDENT)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          Role       @default(STUDENT)
+  status        UserStatus @default(ACTIVE)
+  lastLogin     DateTime?
+  departmentId  String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
+  accounts  Account[]
+  sessions  Session[]
+  auditLogs AuditLog[]
+
+  department Department? @relation("DepartmentAdmins", fields: [departmentId], references: [id], onDelete: SetNull)
+  // Placeholder relationships
+  // students Student[]
+}
+
+// -----------------------------------------------------------------------------
+// Department Management Module
+// -----------------------------------------------------------------------------
+
+enum DepartmentStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+model Faculty {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  departments Department[]
+}
+
+model Department {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  code        String           @unique
+  description String?
+  status      DepartmentStatus @default(ACTIVE)
+  facultyId   String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  faculty Faculty? @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+
+  administrators User[] @relation("DepartmentAdmins")
+
+  // Placeholder relationships for future modules
+  // students Student[]
+  // elections Election[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  details   String?  @db.Text
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
