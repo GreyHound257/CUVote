@@ -81,8 +81,8 @@ model User {
   auditLogs AuditLog[]
 
   department Department? @relation("DepartmentAdmins", fields: [departmentId], references: [id], onDelete: SetNull)
-  // Placeholder relationships
-  // students Student[]
+
+  student Student?
 }
 
 // -----------------------------------------------------------------------------
@@ -120,8 +120,9 @@ model Department {
 
   administrators User[] @relation("DepartmentAdmins")
 
+  students Student[]
+
   // Placeholder relationships for future modules
-  // students Student[]
   // elections Election[]
 }
 
@@ -129,9 +130,43 @@ model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
   action    String
+  entity    String?
+  entityId  String?
   details   String?  @db.Text
   ipAddress String?
   createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// -----------------------------------------------------------------------------
+// Student Management Module
+// -----------------------------------------------------------------------------
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  GRADUATED
+}
+
+model Student {
+  id           String        @id @default(cuid())
+  matricNo     String        @unique
+  fullName     String
+  email        String        @unique
+  level        Int
+  isEligible   Boolean       @default(true)
+  status       StudentStatus @default(ACTIVE)
+  departmentId String
+  userId       String?       @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id])
+  user       User?      @relation(fields: [userId], references: [id])
+
+  @@index([matricNo])
+  @@index([email])
+  @@index([departmentId])
 }
