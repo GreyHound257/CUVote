@@ -14,9 +14,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const department = await prisma.department.findUnique({
       where: { id },
-      include: {
-        faculty: true,
-      },
+      // include: {
+      //   faculty: true, // Placeholder for future Faculty module
+      // },
     });
 
     if (!department) return errorResponse("Department not found", 404);

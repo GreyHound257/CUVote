@@ -1,4 +1,4 @@
-import type { NextAuthConfig } from "next-auth";
+import type { NextAuthConfig, User } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
 export const authConfig = {
@@ -14,7 +14,7 @@ export const authConfig = {
       },
       // The authorization logic is implemented in auth.ts which runs in the Node runtime,
       // as Edge runtime (which this file can run in) does not support bcrypt/Prisma seamlessly yet.
-      authorize: undefined as unknown as (credentials: Partial<Record<"email" | "password", unknown>>, request: Request) => Promise<any>
+      authorize: undefined as unknown as (credentials: Partial<Record<"email" | "password", unknown>>, request: Request) => Promise<User | null>
     })
   ],
   callbacks: {
