@@ -71,7 +71,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         ...(name && { name }),
         ...(code && { code }),
         ...(description !== undefined && { description }),
-        ...(status && { status }),
+        ...(status && { status: status as "ACTIVE" | "INACTIVE" | "DELETED" }),
         ...(facultyId !== undefined && { facultyId }),
       },
     });
@@ -158,7 +158,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const updated = await prisma.department.update({
       where: { id },
-      data: { status: newStatus },
+      data: { status: newStatus as "ACTIVE" | "INACTIVE" | "DELETED" },
     });
 
     await logAuditAction(
