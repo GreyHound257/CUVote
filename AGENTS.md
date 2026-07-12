@@ -327,6 +327,10 @@ Hash passwords securely.
 Protect sensitive endpoints.
 
 ==================================================
+MASTER ARCHITECTURE UPDATE: PSEUDONYMOUS VOTING
+CUVote utilizes a Pseudonymous Voting Model. Voter eligibility must be verified, but the identity of the voter must remain permanently decoupled from the stored ballot. The Candidate schema and related models must never contain any relationships that would force a traceable mapping between a candidate and specific voters.
+
+==================================================
 API STANDARDS
 Every API must:
 Validate input

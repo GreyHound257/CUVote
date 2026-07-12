@@ -121,9 +121,7 @@ model Department {
   administrators User[] @relation("DepartmentAdmins")
 
   students Student[]
-
-  // Placeholder relationships for future modules
-  // elections Election[]
+  elections Election[]
 }
 
 model AuditLog {
@@ -165,8 +163,86 @@ model Student {
 
   department Department @relation(fields: [departmentId], references: [id])
   user       User?      @relation(fields: [userId], references: [id])
+  candidates Candidate[]
 
   @@index([matricNo])
   @@index([email])
   @@index([departmentId])
+}
+
+// -----------------------------------------------------------------------------
+// Election Management Module
+// -----------------------------------------------------------------------------
+
+enum ElectionStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  VOTING_OPEN
+  VOTING_CLOSED
+  RESULTS_GENERATED
+  PUBLISHED_RESULTS
+  ARCHIVED
+}
+
+model Election {
+  id           String         @id @default(cuid())
+  title        String
+  description  String?
+  departmentId String
+  status       ElectionStatus @default(DRAFT)
+  startTime    DateTime?
+  endTime      DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  department   Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  positions    Position[]
+  candidates   Candidate[]
+}
+
+model Position {
+  id          String   @id @default(cuid())
+  electionId  String
+  title       String
+  description String?
+  minCandidates Int @default(1)
+  maxCandidates Int @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  election    Election    @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  candidates  Candidate[]
+}
+
+// -----------------------------------------------------------------------------
+// Candidate Management Module
+// -----------------------------------------------------------------------------
+
+enum CandidateStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  WITHDRAWN
+  DISQUALIFIED
+}
+
+model Candidate {
+  id         String          @id @default(cuid())
+  studentId  String
+  electionId String
+  positionId String
+  status     CandidateStatus @default(PENDING_REVIEW)
+  manifesto  String?         @db.Text
+  slogan     String?
+  photoUrl   String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  election   Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  position   Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, electionId])
 }
