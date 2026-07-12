@@ -79,6 +79,8 @@ model User {
   accounts  Account[]
   sessions  Session[]
   auditLogs AuditLog[]
+  notifications          Notification[]
+  notificationPreference NotificationPreference?
 
   department Department? @relation("DepartmentAdmins", fields: [departmentId], references: [id], onDelete: SetNull)
 
@@ -132,6 +134,8 @@ model AuditLog {
   entityId  String?
   details   String?  @db.Text
   ipAddress String?
+  userAgent String?
+  outcome   String?
   createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -304,4 +308,32 @@ model ElectionResult {
   election  Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
   position  Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
   candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// Notification System
+// -----------------------------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String   @db.Text
+  type      String
+  isRead    Boolean  @default(false)
+  priority  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
+
+model NotificationPreference {
+  id       String @id @default(cuid())
+  userId   String @unique
+  channels Json
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
