@@ -128,3 +128,45 @@
     @apply font-sans;
   }
 }
+/* Print Styles for Native PDF Export Support */
+@media print {
+  @page {
+    margin: 1cm;
+    size: A4 portrait;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Hide interactive elements, navigations, sidebars */
+  header, nav, aside, footer, button, .print\:hidden {
+    display: none !important;
+  }
+
+  /* Expand main content */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Reset Card layouts for clean printing */
+  .border, .border-b {
+    border-color: #e5e7eb !important;
+  }
+
+  /* Ensure page breaks don't happen inside critical sections */
+  .card, table, img, svg {
+    page-break-inside: avoid;
+  }
+
+  /* Show elements specifically designed for print */
+  .print\:block {
+    display: block !important;
+  }
+}
