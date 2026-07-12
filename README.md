@@ -37,3 +37,11 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Pseudonymous Voting Model
 CUVote utilizes a Pseudonymous Voting Model. Voter eligibility is rigorously verified, but the identity of the voter must remain permanently decoupled from the stored ballot. The architecture ensures that there is no traceable mapping between a candidate and specific voters in the database.
+
+## Master Architecture Update: Results Separation
+The platform separates Live Vote Ingestion from Result Publication. While voting is open, votes are accepted and stored anonymously. No results, counts, or charts should be accessible to any user (including administrators) until the election moves strictly to a VOTING_CLOSED state and results are explicitly compiled.
+
+## Privacy Model (Pseudonymous Ballots)
+To ensure complete ballot secrecy while strictly preventing duplicate votes:
+- **The Ledger**: Track who has voted by saving a record linking the Student to the Election (and optionally the specific Position). This acts as the checklist preventing double-voting.
+- **The Ballot Box**: Track what was voted for by saving selections in a completely separate table that contains no foreign keys, identifiers, or tracking mechanisms back to the original Student or User tables.
