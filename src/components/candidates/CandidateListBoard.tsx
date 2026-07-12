@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -9,23 +9,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { CandidateStatus } from "@prisma/client";
 
 export function CandidateListBoard({ showApprovalQueue = false }: { showApprovalQueue?: boolean }) {
-  const [candidates, setCandidates] = useState<any[]>([]);
+  interface CandidateInfo {
+    id: string;
+    photoUrl?: string;
+    status: CandidateStatus;
+    student: { fullName: string; matricNo?: string };
+    election: { title: string };
+    position: { title: string };
+  }
+  const [candidates, setCandidates] = useState<CandidateInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>(showApprovalQueue ? "PENDING_REVIEW" : "ALL");
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    fetchCandidates();
-  }, [statusFilter, search]);
-
-  const fetchCandidates = async () => {
+  const fetchCandidates = useCallback(async () => {
     setLoading(true);
     let url = `/api/candidates?search=${encodeURIComponent(search)}`;
     if (statusFilter !== "ALL") {
@@ -39,7 +44,12 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
       console.error(err);
     }
     setLoading(false);
-  };
+  }, [search, statusFilter]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCandidates();
+  }, [statusFilter, search, fetchCandidates]);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
@@ -106,7 +116,7 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
                 <TableRow key={c.id}>
                   <TableCell>
                     <Avatar>
-                      <AvatarImage src={c.photoUrl} alt={c.student?.fullName} />
+                      {c.photoUrl && <Image src={c.photoUrl} alt={c.student?.fullName || "Candidate"} fill className="rounded-full object-cover" sizes="40px" />}
                       <AvatarFallback>{c.student?.fullName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </TableCell>

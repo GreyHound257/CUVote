@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { ResultService } from "@/services/resultService";
 import { Roles } from "@/constants";
+import { z } from "zod";
 
 export async function PATCH(req: Request) {
   try {
@@ -16,7 +17,12 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
-    const { electionId } = body;
+    const schema = z.object({ electionId: z.string().min(1) });
+    const parsed = schema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, error: "Invalid electionId" }, { status: 400 });
+    }
+    const { electionId } = parsed.data;
 
     if (!electionId) {
       return NextResponse.json({ success: false, error: "Missing electionId" }, { status: 400 });

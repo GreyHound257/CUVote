@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { CandidateStatus, ElectionStatus } from "@prisma/client";
+import { CandidateStatus, ElectionStatus, Prisma } from "@prisma/client";
 
 export class CandidateService {
   /**
@@ -134,7 +134,7 @@ export class CandidateService {
     const { page = 1, limit = 50, search, ...exactFilters } = filters;
     const skip = (page - 1) * limit;
 
-    const where: any = { ...exactFilters };
+    const where: Prisma.CandidateWhereInput = { ...exactFilters };
 
     if (search) {
       where.student = {

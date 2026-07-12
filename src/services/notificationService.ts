@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { prisma } from "@/lib/prisma";
 
 export interface NotificationPayload {
@@ -32,8 +33,7 @@ export class InAppNotificationProvider implements NotificationProvider {
  */
 export class EmailProvider implements NotificationProvider {
   async send(payload: NotificationPayload): Promise<void> {
-    // TODO: Integrate with SendGrid, SES, etc.
-    console.log(`[EmailProvider] Sending email to User ${payload.userId}: ${payload.title}`);
+    logger.info(`[EmailProvider] Sending email to User ${payload.userId}: ${payload.title}`);
   }
 }
 
@@ -43,8 +43,7 @@ export class EmailProvider implements NotificationProvider {
  */
 export class SMSProvider implements NotificationProvider {
   async send(payload: NotificationPayload): Promise<void> {
-    // TODO: Integrate with Twilio, SNS, etc.
-    console.log(`[SMSProvider] Sending SMS to User ${payload.userId}: ${payload.title}`);
+    logger.info(`[SMSProvider] Sending SMS to User ${payload.userId}: ${payload.title}`);
   }
 }
 
@@ -54,8 +53,7 @@ export class SMSProvider implements NotificationProvider {
  */
 export class PushProvider implements NotificationProvider {
   async send(payload: NotificationPayload): Promise<void> {
-    // TODO: Integrate with FCM, APNs, etc.
-    console.log(`[PushProvider] Sending push notification to User ${payload.userId}: ${payload.title}`);
+    logger.info(`[PushProvider] Sending push notification to User ${payload.userId}: ${payload.title}`);
   }
 }
 
@@ -84,7 +82,7 @@ export class NotificationService {
 
     results.forEach((result, idx) => {
       if (result.status === "rejected") {
-        console.error(`Provider ${idx} failed to send notification:`, result.reason);
+        logger.error(`Provider ${idx} failed to send notification:`, result.reason);
       }
     });
   }

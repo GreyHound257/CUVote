@@ -31,14 +31,16 @@ export async function GET(request: Request) {
           departmentId: student.departmentId,
           status: "VOTING_OPEN"
         },
-        orderBy: { endTime: 'asc' }
+        orderBy: { endTime: 'asc' },
+        select: { id: true, title: true, status: true, startTime: true, endTime: true, departmentId: true }
       }),
       prisma.election.findMany({
         where: {
           departmentId: student.departmentId,
           status: { in: ["SCHEDULED", "PUBLISHED"] }
         },
-        orderBy: { startTime: 'asc' }
+        orderBy: { startTime: 'asc' },
+        select: { id: true, title: true, status: true, startTime: true, endTime: true, departmentId: true }
       }),
       prisma.voteRecord.findMany({
         where: { studentId: student.id },
@@ -55,7 +57,8 @@ export async function GET(request: Request) {
           status: "PUBLISHED_RESULTS"
         },
         orderBy: { updatedAt: 'desc' },
-        take: 5
+        take: 5,
+        select: { id: true, title: true, status: true, startTime: true, endTime: true, departmentId: true }
       })
     ]);
 

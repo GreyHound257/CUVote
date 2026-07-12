@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     const positionId = searchParams.get("positionId") || undefined;
     const status = (searchParams.get("status") as CandidateStatus) || undefined;
 
-    let filters: any = { page, limit, search, electionId, positionId, status };
+    const filters: any = { page, limit, search, electionId, positionId, status };
 
     const userRole = session.user.role;
 

@@ -139,6 +139,8 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
 }
 
 // -----------------------------------------------------------------------------
@@ -288,6 +290,9 @@ model AnonymizedBallot {
   election  Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
   position  Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
   candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([electionId, positionId, candidateId])
+  @@index([electionId])
 }
 
 // -----------------------------------------------------------------------------

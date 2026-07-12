@@ -202,8 +202,8 @@ export class VotingService {
       );
 
       return { success: true };
-    } catch (error: any) {
-      if (error.message && error.message.includes("Duplicate voting attempt")) {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message.includes("Duplicate voting attempt")) {
          await logAuditAction(
             student.userId,
             "DUPLICATE_VOTE_BLOCKED",
@@ -212,8 +212,9 @@ export class VotingService {
             "Election",
             electionId
          );
+         throw new Error("You have already voted in this election or for this position.");
       }
-      throw error;
+      throw new Error("An error occurred while submitting your vote. Please try again.");
     }
   }
 }
