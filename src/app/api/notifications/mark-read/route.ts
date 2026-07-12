@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -38,8 +39,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     return successResponse({ message: "Notifications marked as read" });
-  } catch (error: any) {
-    console.error("Notifications PATCH Error:", error);
+  } catch (error: unknown) {
+    logger.error("Notifications PATCH Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }

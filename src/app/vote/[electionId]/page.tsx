@@ -1,4 +1,5 @@
 "use client";
+import { logger } from "@/utils/logger";
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
@@ -126,7 +127,7 @@ export default function BallotPage({ params }: { params: Promise<{ electionId: s
       setSuccess(true);
       toast.success("Vote Submitted", { description: "Your anonymous ballot has been securely cast." });
     } catch (err: any) {
-      console.error(err);
+      logger.error(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);
     }

@@ -1,4 +1,5 @@
 "use client";
+import { logger } from "@/utils/logger";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -60,7 +61,7 @@ export default function StudentsPage() {
         setDepartments(json.data);
       }
     } catch (e) {
-      console.error(e);
+      logger.error(e instanceof Error ? e.message : String(e));
     }
   };
 

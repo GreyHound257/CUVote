@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { ResultService } from "@/services/resultService";
@@ -31,10 +32,10 @@ export async function PATCH(req: Request) {
     const result = await ResultService.publishResults(electionId, session.user.id);
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    console.error("Publish Results Error:", error);
+  } catch (error: unknown) {
+    logger.error("Publish Results Error:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to publish results" },
+      { success: false, error: (error instanceof Error ? error.message : "Internal Server Error") || "Failed to publish results" },
       { status: 500 }
     );
   }

@@ -1,4 +1,5 @@
 "use client";
+import { logger } from "@/utils/logger";
 
 import { useEffect, useState, useCallback } from "react";
 import {
@@ -41,7 +42,7 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
       const data = await res.json();
       if (res.ok) setCandidates(data.data || []);
     } catch (err) {
-      console.error(err);
+      logger.error(err instanceof Error ? err.message : String(err));
     }
     setLoading(false);
   }, [search, statusFilter]);
@@ -60,7 +61,7 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
       });
       fetchCandidates();
     } catch (err) {
-      console.error(err);
+      logger.error(err instanceof Error ? err.message : String(err));
     }
   };
 

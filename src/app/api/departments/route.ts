@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createDepartmentSchema } from "@/validation/department";
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
     const [departments, total] = await Promise.all([
       prisma.department.findMany({
         where: whereCondition,
+        select: { id: true, name: true, code: true, description: true, status: true, facultyId: true, createdAt: true, updatedAt: true },
         orderBy: { name: "asc" },
       }),
       prisma.department.count({ where: whereCondition }),
@@ -36,7 +38,7 @@ export async function GET(req: NextRequest) {
 
     return successResponse(departments);
   } catch (error: unknown) {
-    console.error("GET Departments Error:", error);
+    logger.error("GET Departments Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }
@@ -86,7 +88,7 @@ export async function POST(req: NextRequest) {
 
     return successResponse(newDepartment, 201);
   } catch (error: unknown) {
-    console.error("POST Department Error:", error);
+    logger.error("POST Department Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }

@@ -67,8 +67,8 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error instanceof Error ? error.message : "Internal Server Error") }, { status: 500 });
   }
 }
 
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(candidate, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error instanceof Error ? error.message : "Internal Server Error") }, { status: 400 });
   }
 }

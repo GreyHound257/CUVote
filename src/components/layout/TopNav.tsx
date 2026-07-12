@@ -1,4 +1,5 @@
 "use client";
+import { logger } from "@/utils/logger";
 
 import React from "react";
 import Link from "next/link";
@@ -10,7 +11,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 
 function NotificationCenter() {
-  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [notifications, setNotifications] = React.useState<{ id: string, title: string, message: string, isRead: boolean, createdAt: string }[]>([]);
   const [unreadCount, setUnreadCount] = React.useState(0);
 
   const fetchNotifications = async () => {
@@ -20,10 +21,10 @@ function NotificationCenter() {
         const json = await res.json();
         const data = json.data || [];
         setNotifications(data);
-        setUnreadCount(data.filter((n: any) => !n.isRead).length);
+        setUnreadCount(data.filter((n: { isRead: boolean }) => !n.isRead).length);
       }
-    } catch (error) {
-      console.error("Failed to load notifications");
+    } catch {
+      logger.error("Failed to load notifications");
     }
   };
 
@@ -42,8 +43,8 @@ function NotificationCenter() {
         body: JSON.stringify(body),
       });
       fetchNotifications();
-    } catch (error) {
-      console.error("Failed to mark notifications as read");
+    } catch {
+      logger.error("Failed to mark notifications as read");
     }
   };
 

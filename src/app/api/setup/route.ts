@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { setupWizardSchema } from "@/validation/auth";
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     return successResponse({ message: "Super Administrator created successfully" }, 201);
   } catch (error: unknown) {
-    console.error("Setup Wizard Error:", error);
+    logger.error("Setup Wizard Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }
@@ -60,7 +61,7 @@ export async function GET() {
 
         return successResponse({ isSetupComplete: !!superAdminExists });
     } catch (error: unknown) {
-        console.error("Setup Check Error:", error);
+        logger.error("Setup Check Error:", error);
         return errorResponse("Internal server error", 500);
     }
 }

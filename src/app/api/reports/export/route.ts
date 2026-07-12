@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -126,7 +127,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error("Export Error:", error);
+    logger.error("Export Error:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

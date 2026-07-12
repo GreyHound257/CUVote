@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { ResultService } from "@/services/resultService";
@@ -31,10 +32,10 @@ export async function POST(req: Request) {
     const result = await ResultService.generateResults(electionId, session.user.id);
 
     return NextResponse.json(result);
-  } catch (error: any) {
-    console.error("Generate Results Error:", error);
+  } catch (error: unknown) {
+    logger.error("Generate Results Error:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to generate results" },
+      { success: false, error: (error instanceof Error ? error.message : "Internal Server Error") || "Failed to generate results" },
       { status: 500 }
     );
   }

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -22,10 +23,10 @@ export async function GET(req: Request) {
     const elections = await VotingService.getActiveElections(student.id, student.departmentId);
 
     return NextResponse.json({ data: elections });
-  } catch (error: any) {
-    console.error("Error in get elections API:", error);
+  } catch (error: unknown) {
+    logger.error("Error in get elections API:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch elections" },
+      { error: (error instanceof Error ? error.message : "Internal Server Error") || "Failed to fetch elections" },
       { status: 500 }
     );
   }

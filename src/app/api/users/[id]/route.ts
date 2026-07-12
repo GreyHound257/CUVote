@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateUserSchema } from "@/validation/user";
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return successResponse(user);
   } catch (error: unknown) {
-    console.error("GET User by ID Error:", error);
+    logger.error("GET User by ID Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }
@@ -115,7 +116,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return successResponse(updated);
   } catch (error: unknown) {
-    console.error("PUT User Error:", error);
+    logger.error("PUT User Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }
@@ -177,7 +178,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     return successResponse(updated);
   } catch (error: unknown) {
-    console.error("PATCH User Error:", error);
+    logger.error("PATCH User Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }

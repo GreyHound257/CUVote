@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -57,14 +58,7 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
-        include: {
-            user: {
-                select: {
-                    name: true,
-                    email: true,
-                }
-            }
-        }
+        select: { id: true, action: true, details: true, entity: true, entityId: true, outcome: true, createdAt: true, user: { select: { name: true, email: true } } }
       }),
       prisma.auditLog.count({ where: whereClause }),
     ]);
@@ -91,8 +85,8 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
-    console.error("Audit Logs GET Error:", error);
+  } catch (error: unknown) {
+    logger.error("Audit Logs GET Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }
