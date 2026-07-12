@@ -27,7 +27,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const updated = await CandidateService.updateCandidate(id, session.user.id, data);
     return NextResponse.json(updated);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error instanceof Error ? error.message : "Internal Server Error") }, { status: 400 });
   }
 }

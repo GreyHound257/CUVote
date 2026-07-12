@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { StudentService } from "@/services/studentService";
 import { auth } from "@/lib/auth";
@@ -53,7 +54,7 @@ export async function PATCH(
     return NextResponse.json(updated);
 
   } catch (error: unknown) {
-    console.error(`PATCH /api/students/[id] error:`, error);
+    logger.error(`PATCH /api/students/[id] error:`, error);
     const msg = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ error: msg }, { status: 400 });
   }

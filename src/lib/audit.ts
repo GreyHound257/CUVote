@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { prisma } from "./prisma";
 
 export async function logAuditAction(
@@ -24,7 +25,7 @@ export async function logAuditAction(
       },
     });
   } catch (error) {
-    console.error("Failed to log audit action:", error);
+    logger.error("Failed to log audit action:", error);
     // We intentionally don't throw the error so that failing to log
     // doesn't bring down the main business transaction, but it is logged to standard error.
   }

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -26,8 +27,8 @@ export async function GET(req: NextRequest) {
     });
 
     return successResponse(notifications);
-  } catch (error: any) {
-    console.error("Notifications GET Error:", error);
+  } catch (error: unknown) {
+    logger.error("Notifications GET Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { onboardSchema } from "@/validation/onboard";
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     return successResponse({ message: "Password set successfully" }, 200);
   } catch (error: unknown) {
-    console.error("Onboard Error:", error);
+    logger.error("Onboard Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }

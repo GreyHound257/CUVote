@@ -1,4 +1,5 @@
 "use client";
+import { logger } from "@/utils/logger";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ export function CandidateForm({ candidateId, initialData, onSuccess }: { candida
         onSuccess();
       }
     } catch (err) {
-      console.error(err);
+      logger.error(err instanceof Error ? err.message : String(err));
     }
     setLoading(false);
   };

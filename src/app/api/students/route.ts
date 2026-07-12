@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { StudentService } from "@/services/studentService";
 import { auth } from "@/lib/auth";
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error: unknown) {
-    console.error("GET /api/students error:", error);
+    logger.error("GET /api/students error:", error);
     const msg = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     const student = await StudentService.createStudent(body);
     return NextResponse.json(student, { status: 201 });
   } catch (error: unknown) {
-    console.error("POST /api/students error:", error);
+    logger.error("POST /api/students error:", error);
     const msg = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ error: msg }, { status: 400 });
   }

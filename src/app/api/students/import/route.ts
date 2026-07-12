@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { StudentService } from "@/services/studentService";
 import { auth } from "@/lib/auth";
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result, { status: 200 });
   } catch (error: unknown) {
-    console.error("POST /api/students/import error:", error);
+    logger.error("POST /api/students/import error:", error);
     const msg = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json({ error: msg }, { status: 400 });
   }

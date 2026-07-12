@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -46,11 +47,11 @@ export async function POST(req: Request) {
     await VotingService.submitVote(electionId, student.id, votes, ipAddress);
 
     return NextResponse.json({ success: true, message: "Vote submitted successfully" });
-  } catch (error: any) {
-    console.error("Error in submit vote API:", error);
-    const status = error.message.includes("Duplicate voting attempt") ? 409 : 400;
+  } catch (error: unknown) {
+    logger.error("Error in submit vote API:", error);
+    const status = (error instanceof Error ? error.message : "Internal Server Error").includes("Duplicate voting attempt") ? 409 : 400;
     return NextResponse.json(
-      { error: error.message || "Failed to submit vote" },
+      { error: (error instanceof Error ? error.message : "Internal Server Error") || "Failed to submit vote" },
       { status }
     );
   }

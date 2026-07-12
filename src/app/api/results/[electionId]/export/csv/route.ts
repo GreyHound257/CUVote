@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { ResultService } from "@/services/resultService";
@@ -57,12 +58,12 @@ export async function GET(
     );
 
     return new NextResponse(csvContent, { status: 200, headers });
-  } catch (error: any) {
-    console.error("Export Results Error:", error);
-    if (error.message === "Results are not yet published for this election.") {
-      return new NextResponse(error.message, { status: 403 });
+  } catch (error: unknown) {
+    logger.error("Export Results Error:", error);
+    if ((error instanceof Error ? error.message : "Internal Server Error") === "Results are not yet published for this election.") {
+      return new NextResponse((error instanceof Error ? error.message : "Internal Server Error"), { status: 403 });
     }
-    return new NextResponse(error.message || "Failed to fetch results", {
+    return new NextResponse((error instanceof Error ? error.message : "Internal Server Error") || "Failed to fetch results", {
       status: 500,
     });
   }

@@ -1,4 +1,5 @@
 "use client";
+import { logger } from "@/utils/logger";
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ export default function ErrorBoundary({
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error(error);
+    logger.error(error.message || String(error));
   }, [error]);
 
   return (

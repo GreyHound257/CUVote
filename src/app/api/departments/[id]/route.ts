@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateDepartmentSchema } from "@/validation/department";
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return successResponse(department);
   } catch (error: unknown) {
-    console.error("GET Department by ID Error:", error);
+    logger.error("GET Department by ID Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }
@@ -85,7 +86,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return successResponse(updated);
   } catch (error: unknown) {
-    console.error("PUT Department Error:", error);
+    logger.error("PUT Department Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }
@@ -117,7 +118,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     return successResponse({ message: "Department deleted successfully" });
   } catch (error: unknown) {
-    console.error("DELETE Department Error:", error);
+    logger.error("DELETE Department Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }
@@ -168,7 +169,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     return successResponse(updated);
   } catch (error: unknown) {
-    console.error("PATCH Department Error:", error);
+    logger.error("PATCH Department Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }

@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -53,10 +54,10 @@ export async function GET(req: Request) {
     const history = Array.from(historyMap.values());
 
     return NextResponse.json({ data: history });
-  } catch (error: any) {
-    console.error("Error in get voting history API:", error);
+  } catch (error: unknown) {
+    logger.error("Error in get voting history API:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch history" },
+      { error: (error instanceof Error ? error.message : "Internal Server Error") || "Failed to fetch history" },
       { status: 500 }
     );
   }

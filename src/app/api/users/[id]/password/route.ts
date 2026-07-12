@@ -1,3 +1,4 @@
+import { logger } from "@/utils/logger";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { changePasswordSchema } from "@/validation/auth";
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return successResponse({ message: "Password changed successfully" });
   } catch (error: unknown) {
-    console.error("Change Password Error:", error);
+    logger.error("Change Password Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }
