@@ -57,7 +57,8 @@ export async function GET(request: Request) {
           status: { in: ["VOTING_OPEN", "PUBLISHED", "SCHEDULED"] }
         },
         orderBy: { startTime: 'asc' },
-        take: 5
+        take: 5,
+        select: { id: true, title: true, status: true, startTime: true, endTime: true, departmentId: true }
       })
     ]);
 

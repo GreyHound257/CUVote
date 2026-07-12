@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 
     const targetDeptId = session.user.role === "DEPARTMENT_ADMIN" ? session.user.departmentId : departmentId;
     let data: any[] = [];
-    let filename = `report_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+    const filename = `report_${type}_${new Date().toISOString().split('T')[0]}.csv`;
 
     if (type === "students") {
       const students = await prisma.student.findMany({

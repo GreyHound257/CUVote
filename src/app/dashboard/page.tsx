@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { SuperAdminDashboard } from "@/components/dashboard/super-admin-dashboard";
+import { Suspense } from "react";
 import { DeptAdminDashboard } from "@/components/dashboard/dept-admin-dashboard";
 import { StudentDashboard } from "@/components/dashboard/student-dashboard";
 
@@ -20,9 +21,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="w-full">
-      {role === "SUPER_ADMIN" && <SuperAdminDashboard />}
-      {role === "DEPARTMENT_ADMIN" && <DeptAdminDashboard />}
-      {role === "STUDENT" && <StudentDashboard />}
+      {role === "SUPER_ADMIN" && <Suspense fallback={<div>Loading dashboard...</div>}><SuperAdminDashboard /></Suspense>}
+      {role === "DEPARTMENT_ADMIN" && <Suspense fallback={<div>Loading dashboard...</div>}><DeptAdminDashboard /></Suspense>}
+      {role === "STUDENT" && <Suspense fallback={<div>Loading dashboard...</div>}><StudentDashboard /></Suspense>}
     </div>
   );
 }

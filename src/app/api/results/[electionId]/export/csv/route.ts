@@ -9,6 +9,7 @@ export async function GET(
 ) {
   try {
     const session = await auth();
+    if (!session) return new NextResponse("Unauthorized", { status: 401 });
 
     let isAdmin = false;
     if (
