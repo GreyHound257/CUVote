@@ -202,6 +202,7 @@ model Election {
   candidates        Candidate[]
   voteRecords       VoteRecord[]
   anonymizedBallots AnonymizedBallot[]
+  electionResults   ElectionResult[]
 }
 
 model Position {
@@ -218,6 +219,7 @@ model Position {
   candidates        Candidate[]
   voteRecords       VoteRecord[]
   anonymizedBallots AnonymizedBallot[]
+  electionResults   ElectionResult[]
 }
 
 // -----------------------------------------------------------------------------
@@ -249,6 +251,7 @@ model Candidate {
   election          Election           @relation(fields: [electionId], references: [id], onDelete: Cascade)
   position          Position           @relation(fields: [positionId], references: [id], onDelete: Cascade)
   anonymizedBallots AnonymizedBallot[]
+  electionResults   ElectionResult[]
 
   @@unique([studentId, electionId])
 }
@@ -277,6 +280,26 @@ model AnonymizedBallot {
   positionId  String
   candidateId String
   createdAt   DateTime @default(now())
+
+  election  Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  position  Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// Results Engine Module
+// -----------------------------------------------------------------------------
+
+model ElectionResult {
+  id          String    @id @default(cuid())
+  electionId  String
+  positionId  String
+  candidateId String
+  voteCount   Int       @default(0)
+  isTie       Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   election  Election  @relation(fields: [electionId], references: [id], onDelete: Cascade)
   position  Position  @relation(fields: [positionId], references: [id], onDelete: Cascade)
