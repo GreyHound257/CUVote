@@ -4,7 +4,9 @@ export async function logAuditAction(
   userId: string | null | undefined,
   action: string,
   details: string | null = null,
-  ipAddress: string | null = null
+  ipAddress: string | null = null,
+  entity: string | null = null,
+  entityId: string | null = null
 ) {
   try {
     await prisma.auditLog.create({
@@ -13,6 +15,8 @@ export async function logAuditAction(
         action,
         details,
         ipAddress,
+        entity,
+        entityId,
       },
     });
   } catch (error) {

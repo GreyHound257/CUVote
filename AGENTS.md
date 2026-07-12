@@ -445,3 +445,13 @@ Always think about future scalability.
 Always produce production-ready software.
 If requirements are ambiguous, make the most maintainable architectural decision and clearly explain the reasoning.
 You are building software that should be maintainable by a professional engineering team for years to come.
+
+==================================================
+MASTER ARCHITECTURE UPDATE: RESULTS SEPARATION
+The platform separates Live Vote Ingestion from Result Publication. While voting is open, votes are accepted and stored anonymously. No results, counts, or charts should be accessible to any user (including administrators) until the election moves strictly to a VOTING_CLOSED state and results are explicitly compiled.
+
+==================================================
+PRIVACY MODEL (PSEUDONYMOUS BALLOTS)
+To ensure complete ballot secrecy while strictly preventing duplicate votes:
+- The Ledger: Track who has voted by saving a record linking the Student to the Election (and optionally the specific Position). This acts as the checklist preventing double-voting.
+- The Ballot Box: Track what was voted for by saving selections in a completely separate table that contains no foreign keys, identifiers, or tracking mechanisms back to the original Student or User tables.
