@@ -1,4 +1,6 @@
 "use client";
+import { EmptyState } from "@/components/shared/EmptyState";
+
 
 import { useState, useEffect, use } from "react";
 import { toast } from "sonner";
@@ -159,7 +161,7 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
                 </div>
               ))}
               {pos.candidates.length === 0 && (
-                <p className="text-sm text-muted-foreground">No candidates or votes calculated yet.</p>
+                <EmptyState title="No candidates or votes" description="There are no candidates or votes calculated for this position yet." />
               )}
             </CardContent>
           </Card>

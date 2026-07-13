@@ -4,7 +4,7 @@ import { Routes } from "@/constants";
 
 export function Sidebar() {
   return (
-    <aside className="w-64 border-r h-full p-4 hidden md:block">
+    <aside className="w-64 border-r h-full p-4 hidden md:block bg-background">
       <nav className="flex flex-col gap-2">
         <Link href={Routes.DASHBOARD} className="p-2 hover:bg-accent rounded-md">
           Dashboard
