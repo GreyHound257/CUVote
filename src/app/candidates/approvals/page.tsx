@@ -1,4 +1,8 @@
 import { ApprovalQueue } from "@/components/candidates/ApprovalQueue";
+import { AppPage } from "@/components/shared/AppPage";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { LinkButton } from "@/components/ui/link-button";
+import { Routes } from "@/constants";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -8,8 +12,17 @@ export const metadata: Metadata = {
 
 export default function ApprovalQueuePage() {
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <AppPage>
+      <PageHeader
+        title="Candidate Approvals"
+        description="Review pending nominations. Approve candidates before voting opens."
+        action={
+          <LinkButton href={Routes.CANDIDATES} variant="outline" className="rounded-full">
+            All Candidates
+          </LinkButton>
+        }
+      />
       <ApprovalQueue />
-    </div>
+    </AppPage>
   );
 }

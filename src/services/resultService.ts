@@ -1,14 +1,144 @@
 import { prisma } from "@/lib/prisma";
-import { ElectionStatus } from "@prisma/client";
+import { ElectionStatus, Role } from "@prisma/client";
 import { logAuditAction } from "@/lib/audit";
 
+const CLOSED_OR_LATER: ElectionStatus[] = [
+  ElectionStatus.VOTING_CLOSED,
+  ElectionStatus.RESULTS_GENERATED,
+  ElectionStatus.PUBLISHED_RESULTS,
+  ElectionStatus.ARCHIVED,
+];
+
+const LIVE_OR_LATER: ElectionStatus[] = [
+  ElectionStatus.VOTING_OPEN,
+  ...CLOSED_OR_LATER,
+];
+
+export type ResultsViewer = {
+  role: Role | string;
+  departmentId?: string | null;
+};
+
 export class ResultService {
+  private static async loadElectionForAccess(electionId: string) {
+    const election = await prisma.election.findUnique({
+      where: { id: electionId },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        departmentId: true,
+      },
+    });
+    if (!election) throw new Error("Election not found");
+    return election;
+  }
+
+  private static assertDepartmentScope(
+    viewer: ResultsViewer,
+    electionDepartmentId: string
+  ) {
+    if (viewer.role === Role.DEPARTMENT_ADMIN) {
+      if (!viewer.departmentId || viewer.departmentId !== electionDepartmentId) {
+        throw new Error("Forbidden: Cannot access results outside your department.");
+      }
+    }
+  }
+
+  /**
+   * Who may view tallies:
+   * - Super Admin: live during voting and anytime after
+   * - Dept Admin: only after voting is closed
+   * - Student / others: only after results are published (or archived)
+   */
+  static assertCanViewResults(
+    viewer: ResultsViewer,
+    election: { status: ElectionStatus; departmentId: string }
+  ) {
+    ResultService.assertDepartmentScope(viewer, election.departmentId);
+
+    if (viewer.role === Role.SUPER_ADMIN) {
+      if (!LIVE_OR_LATER.includes(election.status)) {
+        throw new Error(
+          "Results are only available once voting has opened. Open voting first, or wait for ballots."
+        );
+      }
+      return;
+    }
+
+    if (viewer.role === Role.DEPARTMENT_ADMIN) {
+      if (!CLOSED_OR_LATER.includes(election.status)) {
+        throw new Error(
+          "Department admins can view results only after voting is closed."
+        );
+      }
+      return;
+    }
+
+    // Students and any other role — published only
+    if (
+      election.status !== ElectionStatus.PUBLISHED_RESULTS &&
+      election.status !== ElectionStatus.ARCHIVED
+    ) {
+      throw new Error("Results are not yet published for this election.");
+    }
+  }
+
+  static assertCanGenerate(
+    viewer: ResultsViewer,
+    election: { status: ElectionStatus; departmentId: string }
+  ) {
+    if (
+      viewer.role !== Role.SUPER_ADMIN &&
+      viewer.role !== Role.DEPARTMENT_ADMIN
+    ) {
+      throw new Error("Unauthorized");
+    }
+
+    ResultService.assertDepartmentScope(viewer, election.departmentId);
+
+    if (viewer.role === Role.SUPER_ADMIN) {
+      if (!LIVE_OR_LATER.includes(election.status)) {
+        throw new Error("Cannot generate results until voting is open.");
+      }
+      return;
+    }
+
+    // Dept admin — only after close
+    if (!CLOSED_OR_LATER.includes(election.status)) {
+      throw new Error(
+        "Department admins can generate results only after voting is closed."
+      );
+    }
+  }
+
+  static assertCanPublish(
+    viewer: ResultsViewer,
+    election: { status: ElectionStatus; departmentId: string }
+  ) {
+    if (
+      viewer.role !== Role.SUPER_ADMIN &&
+      viewer.role !== Role.DEPARTMENT_ADMIN
+    ) {
+      throw new Error("Unauthorized");
+    }
+
+    ResultService.assertDepartmentScope(viewer, election.departmentId);
+
+    if (
+      election.status !== ElectionStatus.RESULTS_GENERATED &&
+      election.status !== ElectionStatus.VOTING_CLOSED
+    ) {
+      throw new Error(
+        "Election must be in VOTING_CLOSED or RESULTS_GENERATED state to publish."
+      );
+    }
+  }
+
   /**
    * Generates or updates results for an election by aggregating anonymized ballots.
-   * Admins only. Handles vote counts and tie determination.
    */
-  static async generateResults(electionId: string, adminId: string) {
-    // 1. Verify election and status
+  static async generateResults(electionId: string, adminId: string, viewer: ResultsViewer) {
     const election = await prisma.election.findUnique({
       where: { id: electionId },
       include: {
@@ -24,8 +154,8 @@ export class ResultService {
       throw new Error("Election not found");
     }
 
-    // 2. Aggregate votes
-    // We group by positionId and candidateId
+    this.assertCanGenerate(viewer, election);
+
     const ballotCounts = await prisma.anonymizedBallot.groupBy({
       by: ["positionId", "candidateId"],
       where: {
@@ -36,7 +166,6 @@ export class ResultService {
       },
     });
 
-    // 3. Process each position to compute results and ties
     const resultsData: {
       electionId: string;
       positionId: string;
@@ -46,7 +175,6 @@ export class ResultService {
     }[] = [];
 
     for (const position of election.positions) {
-      // Get counts for candidates in this position
       const positionCounts = ballotCounts.filter(
         (b) => b.positionId === position.id
       );
@@ -61,10 +189,8 @@ export class ResultService {
         };
       });
 
-      // Sort descending by vote count
       candidateResults.sort((a, b) => b.voteCount - a.voteCount);
 
-      // Determine ties for the top count
       const topVoteCount = candidateResults.length > 0 ? candidateResults[0].voteCount : 0;
       const topCandidatesCount = candidateResults.filter(
         (cr) => cr.voteCount === topVoteCount
@@ -83,9 +209,7 @@ export class ResultService {
       }
     }
 
-    // 4. Save to ElectionResult table inside a transaction
     await prisma.$transaction(async (tx) => {
-      // Remove existing unpublished/published results for this election
       await tx.electionResult.deleteMany({
         where: {
           electionId: election.id,
@@ -98,15 +222,13 @@ export class ResultService {
         });
       }
 
-      // We might also update the election status to RESULTS_GENERATED if it was closed
+      // Official status change only after close — live generates stay on VOTING_OPEN
       if (election.status === ElectionStatus.VOTING_CLOSED) {
         await tx.election.update({
           where: { id: election.id },
           data: { status: ElectionStatus.RESULTS_GENERATED },
         });
       } else if (election.status === ElectionStatus.PUBLISHED_RESULTS) {
-        // If an admin recalculates after it's published, revert election state
-        // to RESULTS_GENERATED to maintain consistency because the publishedAt dates were cleared.
         await tx.election.update({
           where: { id: election.id },
           data: { status: ElectionStatus.RESULTS_GENERATED },
@@ -114,36 +236,37 @@ export class ResultService {
       }
     });
 
-    // 5. Audit Log
     await logAuditAction(
       adminId,
       "RESULTS_GENERATED",
-      "Election results were generated from ballots.",
+      election.status === ElectionStatus.VOTING_OPEN
+        ? "Live election tallies were refreshed (voting still open)."
+        : "Election results were generated from ballots.",
       null,
       "Election",
       election.id
     );
 
-    return { success: true, message: "Results generated successfully." };
+    return {
+      success: true,
+      message:
+        election.status === ElectionStatus.VOTING_OPEN
+          ? "Live tallies refreshed. Voting is still open — these results are for Super Admin only."
+          : "Results generated successfully.",
+    };
   }
 
   /**
    * Publishes the results for a given election.
-   * Admins only. Sets publishedAt for all results linked to the election.
    */
-  static async publishResults(electionId: string, adminId: string) {
-    const election = await prisma.election.findUnique({
-      where: { id: electionId },
-    });
+  static async publishResults(electionId: string, adminId: string, viewer: ResultsViewer) {
+    const election = await this.loadElectionForAccess(electionId);
+    this.assertCanPublish(viewer, election);
 
-    if (!election) throw new Error("Election not found");
-    if (
-      election.status !== ElectionStatus.RESULTS_GENERATED &&
-      election.status !== ElectionStatus.VOTING_CLOSED
-    ) {
-      throw new Error(
-        "Election must be in VOTING_CLOSED or RESULTS_GENERATED state to publish."
-      );
+    // Ensure counts exist before publishing
+    const existingCount = await prisma.electionResult.count({ where: { electionId } });
+    if (existingCount === 0) {
+      await this.generateResults(electionId, adminId, viewer);
     }
 
     const now = new Date();
@@ -173,10 +296,9 @@ export class ResultService {
   }
 
   /**
-   * Retrieves results for a given election.
-   * If the user is not an Admin, they can only see results if they have been published.
+   * Retrieves results for a given election with role-based visibility.
    */
-  static async getResults(electionId: string, isAdmin: boolean) {
+  static async getResults(electionId: string, viewer: ResultsViewer) {
     const election = await prisma.election.findUnique({
       where: { id: electionId },
       include: {
@@ -192,11 +314,6 @@ export class ResultService {
                 voteCount: "desc",
               },
             },
-            _count: {
-              select: {
-                voteRecords: true,
-              },
-            },
           },
         },
       },
@@ -204,24 +321,26 @@ export class ResultService {
 
     if (!election) throw new Error("Election not found");
 
-    // Compute total turnout based on unique vote records for this election.
-    const totalTurnout = await prisma.voteRecord.groupBy({
-      by: ["studentId"],
-      where: { electionId },
-    }).then((res) => res.length);
+    this.assertCanViewResults(viewer, election);
 
-    // If not admin, check if results are published
-    if (!isAdmin && election.status !== ElectionStatus.PUBLISHED_RESULTS && election.status !== ElectionStatus.ARCHIVED) {
-      throw new Error("Results are not yet published for this election.");
-    }
+    const totalTurnout = await prisma.voteRecord
+      .groupBy({
+        by: ["studentId"],
+        where: { electionId },
+      })
+      .then((res) => res.length);
 
     const formattedPositions = election.positions.map((pos) => {
-      const positionTotalVotes = pos.electionResults.reduce((sum, res) => sum + res.voteCount, 0);
+      const positionTotalVotes = pos.electionResults.reduce(
+        (sum, res) => sum + res.voteCount,
+        0
+      );
 
       const candidatesWithResults = pos.candidates.map((candidate) => {
         const result = pos.electionResults.find((r) => r.candidateId === candidate.id);
         const voteCount = result?.voteCount || 0;
-        const percentage = positionTotalVotes > 0 ? (voteCount / positionTotalVotes) * 100 : 0;
+        const percentage =
+          positionTotalVotes > 0 ? (voteCount / positionTotalVotes) * 100 : 0;
 
         return {
           id: candidate.id,
@@ -235,7 +354,6 @@ export class ResultService {
         };
       });
 
-      // Sort by vote count descending
       candidatesWithResults.sort((a, b) => b.voteCount - a.voteCount);
 
       return {
@@ -247,11 +365,14 @@ export class ResultService {
       };
     });
 
+    const isLive = election.status === ElectionStatus.VOTING_OPEN;
+
     return {
       id: election.id,
       title: election.title,
       status: election.status,
       totalTurnout,
+      isLive,
       positions: formattedPositions,
     };
   }

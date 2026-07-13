@@ -19,6 +19,9 @@ import {
 } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { Routes } from "@/constants";
+import { AppPage } from "@/components/shared/AppPage";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { LinkButton } from "@/components/ui/link-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,6 +37,7 @@ import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger
@@ -143,42 +147,40 @@ export default function DepartmentsPage() {
         const dept = row.original;
         return (
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" className="h-8 w-8 p-0" render={
-                <div>
-                  <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
-                </div>
-              } />
+            <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => router.push(`${Routes.DEPARTMENTS}/${dept.id}`)}>
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push(`${Routes.DEPARTMENTS}/${dept.id}/edit`)}>
-                Edit
-              </DropdownMenuItem>
-              {dept.status !== "DELETED" && (
-                <DropdownMenuItem onClick={() => handleDelete(dept.id)}>
-                  Soft Delete
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => router.push(`${Routes.DEPARTMENTS}/${dept.id}`)}>
+                  View Details
                 </DropdownMenuItem>
-              )}
-              {dept.status === "ACTIVE" && (
-                 <DropdownMenuItem onClick={() => handleAction(dept.id, "deactivate")}>
-                  Deactivate
-               </DropdownMenuItem>
-              )}
-              {dept.status === "INACTIVE" && (
-                 <DropdownMenuItem onClick={() => handleAction(dept.id, "activate")}>
-                  Activate
-               </DropdownMenuItem>
-              )}
-               {dept.status === "DELETED" && (
-                 <DropdownMenuItem onClick={() => handleAction(dept.id, "restore")}>
-                  Restore
-               </DropdownMenuItem>
-              )}
+                <DropdownMenuItem onClick={() => router.push(`${Routes.DEPARTMENTS}/${dept.id}/edit`)}>
+                  Edit
+                </DropdownMenuItem>
+                {dept.status !== "DELETED" && (
+                  <DropdownMenuItem onClick={() => handleDelete(dept.id)}>
+                    Soft Delete
+                  </DropdownMenuItem>
+                )}
+                {dept.status === "ACTIVE" && (
+                   <DropdownMenuItem onClick={() => handleAction(dept.id, "deactivate")}>
+                    Deactivate
+                 </DropdownMenuItem>
+                )}
+                {dept.status === "INACTIVE" && (
+                   <DropdownMenuItem onClick={() => handleAction(dept.id, "activate")}>
+                    Activate
+                 </DropdownMenuItem>
+                )}
+                 {dept.status === "DELETED" && (
+                   <DropdownMenuItem onClick={() => handleAction(dept.id, "restore")}>
+                    Restore
+                 </DropdownMenuItem>
+                )}
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -206,24 +208,29 @@ export default function DepartmentsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Departments</h1>
-        <Button onClick={() => router.push(`${Routes.DEPARTMENTS}/new`)}>Create Department</Button>
-      </div>
+    <AppPage>
+      <PageHeader
+        title="Departments"
+        description="Manage university departments and their settings."
+        action={
+          <LinkButton href={`${Routes.DEPARTMENTS}/new`} className="rounded-full">
+            Create Department
+          </LinkButton>
+        }
+      />
 
-      <div className="flex items-center py-4">
+      <div className="flex items-center">
         <Input
           placeholder="Filter by name..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
             table.getColumn("name")?.setFilterValue(event.target.value)
           }
-          className="max-w-sm"
+          className="max-w-sm rounded-full focus-visible:ring-primary/20"
         />
       </div>
 
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -285,6 +292,6 @@ export default function DepartmentsPage() {
           Next
         </Button>
       </div>
-    </div>
+    </AppPage>
   );
 }

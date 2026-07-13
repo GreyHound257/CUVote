@@ -44,7 +44,9 @@ export function StudentImportDialog({ onImportSuccess }: { onImportSuccess: () =
         toast.error(json.error || "Import failed");
       } else {
         setResult(json);
-        toast.success(`Import complete! Imported: ${json.imported}, Skipped: ${json.skipped}`);
+        toast.success(
+          `Import complete! Imported: ${json.imported}, Skipped: ${json.skipped}. New students can set passwords at the login page.`
+        );
         if (json.imported > 0) {
             onImportSuccess();
         }
@@ -64,14 +66,16 @@ export function StudentImportDialog({ onImportSuccess }: { onImportSuccess: () =
             setResult(null);
         }
     }}>
-      <DialogTrigger>
-        <Button variant="outline"><UploadCloud className="w-4 h-4 mr-2" /> Bulk Import</Button>
+      <DialogTrigger render={<Button variant="outline" className="rounded-full" />}>
+        <UploadCloud className="w-4 h-4 mr-2" /> Bulk Import
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Import Students</DialogTitle>
           <DialogDescription>
-            Upload a CSV file containing students. Ensure columns: matricNo, fullName, email, departmentCode, level.
+            Upload a CSV with columns: matricNo, fullName, email, departmentCode, level.
+            Each imported student automatically gets a login account (password set via{" "}
+            <span className="font-medium">Set your password</span> on the login page).
           </DialogDescription>
         </DialogHeader>
 

@@ -29,6 +29,8 @@ import { Student } from "@prisma/client";
 import { StudentImportDialog } from "@/components/students/StudentImportDialog";
 import { StudentDetailsDialog } from "@/components/students/StudentDetailsDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AppPage } from "@/components/shared/AppPage";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 type StudentWithDept = Student & { department: { name: string, code: string } };
 
@@ -48,6 +50,7 @@ export default function StudentsPage() {
   // Selected for dialog
   const [selectedStudent, setSelectedStudent] = useState<StudentWithDept | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
@@ -156,18 +159,59 @@ export default function StudentsPage() {
   });
 
   return (
-    <div className="space-y-4 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Student Directory</h1>
-        <StudentImportDialog onImportSuccess={() => fetchStudents()} />
-      </div>
+    <AppPage>
+      <PageHeader
+        title="Student Directory"
+        description="Manage student records and voting eligibility. Imported students get login accounts automatically; they set passwords via Login → Set your password."
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              disabled={provisioning}
+              onClick={async () => {
+                setProvisioning(true);
+                try {
+                  const res = await fetch("/api/students/provision-accounts", { method: "POST" });
+                  const json = await res.json();
+                  if (!json.success) {
+                    toast.error(json.error || "Could not provision accounts");
+                    return;
+                  }
+                  const { linked, total, errors } = json.data as {
+                    linked: number;
+                    total: number;
+                    errors: string[];
+                  };
+                  if (linked > 0) {
+                    toast.success(`Linked login accounts for ${linked} of ${total} student(s).`);
+                  } else if (total === 0) {
+                    toast.success("All students already have login accounts.");
+                  } else {
+                    toast.error(`Could not link accounts (${errors?.[0] || "see errors"}).`);
+                  }
+                  fetchStudents();
+                } catch {
+                  toast.error("Failed to provision login accounts.");
+                } finally {
+                  setProvisioning(false);
+                }
+              }}
+            >
+              {provisioning ? "Linking accounts…" : "Link login accounts"}
+            </Button>
+            <StudentImportDialog onImportSuccess={() => fetchStudents()} />
+          </div>
+        }
+      />
 
-      <div className="flex items-center gap-4 py-4">
+      <div className="flex items-center gap-4">
         <Input
           placeholder="Search by name or matric no..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
+          className="max-w-sm rounded-full focus-visible:ring-primary/20"
         />
 
         <Select value={departmentId} onValueChange={(val) => setDepartmentId(val || "all")}>
@@ -194,7 +238,7 @@ export default function StudentsPage() {
         </Select>
       </div>
 
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -275,6 +319,6 @@ export default function StudentsPage() {
             }
         }}
       />
-    </div>
+    </AppPage>
   );
 }

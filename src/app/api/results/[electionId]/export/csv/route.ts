@@ -2,7 +2,6 @@ import { logger } from "@/utils/logger";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { ResultService } from "@/services/resultService";
-import { Roles } from "@/constants";
 
 export async function GET(
   req: Request,
@@ -10,16 +9,7 @@ export async function GET(
 ) {
   try {
     const session = await auth();
-    if (!session) return new NextResponse("Unauthorized", { status: 401 });
-
-    let isAdmin = false;
-    if (
-      session &&
-      (session.user.role === Roles.SUPER_ADMIN ||
-        session.user.role === Roles.DEPARTMENT_ADMIN)
-    ) {
-      isAdmin = true;
-    }
+    if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
 
     const { electionId } = await params;
 
@@ -27,16 +17,17 @@ export async function GET(
       return new NextResponse("Missing electionId", { status: 400 });
     }
 
-    const data = await ResultService.getResults(electionId, isAdmin);
+    const data = await ResultService.getResults(electionId, {
+      role: session.user.role,
+      departmentId: session.user.departmentId,
+    });
 
-    // Convert data to CSV format
     const rows = [
       ["Election", "Position", "Candidate", "Votes", "Percentage", "Is Tie"],
     ];
 
     for (const position of data.positions) {
       for (const candidate of position.candidates) {
-        // Enclose text fields in quotes to safely handle commas
         rows.push([
           `"${data.title.replace(/"/g, '""')}"`,
           `"${position.title.replace(/"/g, '""')}"`,
@@ -60,11 +51,15 @@ export async function GET(
     return new NextResponse(csvContent, { status: 200, headers });
   } catch (error: unknown) {
     logger.error("Export Results Error:", error);
-    if ((error instanceof Error ? error.message : "Internal Server Error") === "Results are not yet published for this election.") {
-      return new NextResponse((error instanceof Error ? error.message : "Internal Server Error"), { status: 403 });
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    if (
+      message.includes("not yet published") ||
+      message.includes("only after") ||
+      message.includes("Forbidden") ||
+      message.includes("only available")
+    ) {
+      return new NextResponse(message, { status: 403 });
     }
-    return new NextResponse((error instanceof Error ? error.message : "Internal Server Error") || "Failed to fetch results", {
-      status: 500,
-    });
+    return new NextResponse(message || "Failed to fetch results", { status: 500 });
   }
 }

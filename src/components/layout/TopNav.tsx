@@ -6,9 +6,11 @@ import Link from "next/link";
 import { Routes, Roles } from "@/constants";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 import { BellIcon, Menu, X } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 function NotificationCenter() {
   const [notifications, setNotifications] = React.useState<{ id: string, title: string, message: string, isRead: boolean, createdAt: string }[]>([]);
@@ -31,7 +33,8 @@ function NotificationCenter() {
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000); // refresh every minute
+    // Poll less aggressively to avoid saturating Neon's connection pool.
+    const interval = setInterval(fetchNotifications, 120000);
     return () => clearInterval(interval);
   }, []);
 
@@ -52,7 +55,7 @@ function NotificationCenter() {
 
   return (
     <Popover>
-      <PopoverTrigger render={<Button variant="ghost" size="icon" className="relative min-w-[44px] min-h-[44px]"><span className="sr-only">Notifications</span></Button>}>
+      <PopoverTrigger render={<Button variant="ghost" size="icon" className="relative min-w-[44px] min-h-[44px] hover:bg-accent/80"><span className="sr-only">Notifications</span></Button>}>
         <BellIcon className="h-5 w-5" />
         {unreadCount > 0 && (
           <Badge variant="destructive" className="absolute -top-1 -right-1 px-1.5 min-w-5 h-5 flex items-center justify-center rounded-full text-[10px]">
@@ -61,7 +64,7 @@ function NotificationCenter() {
         )}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b border-border/50">
           <h4 className="font-semibold text-sm">Notifications</h4>
           {unreadCount > 0 && (
             <Button variant="link" size="sm" onClick={() => markAsRead()} className="text-xs h-auto p-0">
@@ -74,7 +77,7 @@ function NotificationCenter() {
             <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
           ) : (
             notifications.map((n) => (
-              <div key={n.id} className={`p-4 border-b last:border-0 flex flex-col gap-1 ${!n.isRead ? "bg-muted/50" : ""}`}>
+              <div key={n.id} className={`p-4 border-b border-border/50 last:border-0 flex flex-col gap-1 ${!n.isRead ? "bg-muted/50" : ""}`}>
                 <div className="flex justify-between items-start">
                   <span className="font-medium text-sm">{n.title}</span>
                   {!n.isRead && (
@@ -96,50 +99,102 @@ function NotificationCenter() {
   );
 }
 
+function NavLink({ href, children, onClick }: { href: string; children: React.ReactNode; onClick?: () => void }) {
+  return (
+    <LinkButton
+      href={href}
+      variant="ghost"
+      size="sm"
+      className="min-h-[44px] font-medium hover:bg-accent/80"
+      linkClassName="flex items-center"
+      onClick={onClick}
+    >
+      {children}
+    </LinkButton>
+  );
+}
+
 export function TopNav() {
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="flex flex-col md:flex-row items-center justify-between p-4 border-b">
+    <header className={cn(
+      "sticky top-0 z-50",
+      "bg-background/80 backdrop-blur-md",
+      "border-b border-border/50",
+      "flex flex-col md:flex-row items-center justify-between p-4"
+    )}>
       <div className="flex w-full md:w-auto items-center justify-between">
-        <div className="font-bold text-xl">
-          <Link href={Routes.HOME}>CUVote</Link>
+        <div className="font-bold text-xl tracking-tight">
+          <Link href={Routes.HOME} className="hover:text-primary transition-colors">CUVote</Link>
         </div>
         <div className="md:hidden flex items-center gap-2">
           {session?.user && <NotificationCenter />}
-          <Button variant="ghost" size="icon" className="min-w-[44px] min-h-[44px]" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="min-w-[44px] min-h-[44px] hover:bg-accent/80"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             <span className="sr-only">Toggle Menu</span>
           </Button>
         </div>
       </div>
 
-      <nav className={`flex-col md:flex-row items-center gap-4 w-full md:w-auto mt-4 md:mt-0 ${mobileMenuOpen ? "flex" : "hidden md:flex"}`}>
-        <Link href={Routes.DASHBOARD} className="text-sm font-medium hover:underline p-2 min-h-[44px] flex items-center">
+      <nav className={cn(
+        "flex-col md:flex-row items-center gap-1 w-full md:w-auto mt-4 md:mt-0",
+        mobileMenuOpen ? "flex" : "hidden md:flex"
+      )}>
+        <NavLink href={Routes.DASHBOARD} onClick={() => setMobileMenuOpen(false)}>
           Dashboard
-        </Link>
+        </NavLink>
         {session?.user ? (
           <>
-            {session.user.role !== Roles.STUDENT && (
-              <Link href={Routes.AUDIT_LOGS} className="text-sm font-medium hover:underline p-2 min-h-[44px] flex items-center">
-                Audit Logs
-              </Link>
+            {session.user.role === Roles.SUPER_ADMIN && (
+              <NavLink href={Routes.USERS} onClick={() => setMobileMenuOpen(false)}>
+                Users
+              </NavLink>
             )}
-            <Link href={Routes.PROFILE} className="text-sm font-medium hover:underline p-2 min-h-[44px] flex items-center">
+            {(session.user.role === Roles.SUPER_ADMIN ||
+              session.user.role === Roles.DEPARTMENT_ADMIN) && (
+              <>
+                <NavLink href={Routes.STUDENTS} onClick={() => setMobileMenuOpen(false)}>
+                  Students
+                </NavLink>
+                <NavLink href={Routes.CANDIDATES} onClick={() => setMobileMenuOpen(false)}>
+                  Candidates
+                </NavLink>
+                <NavLink href={Routes.CANDIDATE_APPROVALS} onClick={() => setMobileMenuOpen(false)}>
+                  Approvals
+                </NavLink>
+              </>
+            )}
+            {session.user.role !== Roles.STUDENT && (
+              <NavLink href={Routes.AUDIT_LOGS} onClick={() => setMobileMenuOpen(false)}>
+                Audit Logs
+              </NavLink>
+            )}
+            <NavLink href={Routes.PROFILE} onClick={() => setMobileMenuOpen(false)}>
               Profile
-            </Link>
+            </NavLink>
             <div className="hidden md:block">
               <NotificationCenter />
             </div>
-            <Button variant="ghost" size="sm" onClick={() => signOut()} className="min-h-[44px]">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut()}
+              className="min-h-[44px] hover:bg-accent/80"
+            >
               Logout
             </Button>
           </>
         ) : (
-          <Link href={Routes.LOGIN} className="text-sm font-medium hover:underline p-2 min-h-[44px] flex items-center">
+          <NavLink href={Routes.LOGIN} onClick={() => setMobileMenuOpen(false)}>
             Login
-          </Link>
+          </NavLink>
         )}
       </nav>
     </header>

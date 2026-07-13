@@ -64,8 +64,8 @@ export default function BallotPage({ params }: { params: Promise<{ electionId: s
 
         setElection(data.election);
         setPositions(data.positions.filter((p: Position) => !p.hasVoted)); // Only show un-voted positions
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : String(err));
       } finally {
         setLoading(false);
       }
@@ -116,17 +116,17 @@ export default function BallotPage({ params }: { params: Promise<{ electionId: s
       if (!res.ok) {
          if (res.status === 409) {
              toast.error("Duplicate Vote Detected", {
-                description: "You have already voted for one or more of these positions."
+                description: data.error || "You have already voted in this election."
              });
          } else {
              toast.error("Submission Failed", { description: data.error });
          }
-         throw new Error(data.error);
+         return;
       }
 
       setSuccess(true);
       toast.success("Vote Submitted", { description: "Your anonymous ballot has been securely cast." });
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSubmitting(false);

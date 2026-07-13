@@ -6,6 +6,7 @@ import { Roles } from "@/constants";
 import { auth } from "@/lib/auth";
 import { logAuditAction } from "@/lib/audit";
 import { Prisma, Role } from "@prisma/client";
+import { logger } from "@/utils/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
 
     return successResponse(users);
   } catch (error: unknown) {
-    console.error("GET Users Error:", error);
+    logger.error("GET Users Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }
@@ -94,6 +95,45 @@ export async function POST(req: NextRequest) {
       select: { id: true, name: true, email: true, role: true }
     });
 
+    // Link matching Student profile so voting/dashboard works
+    if (role === Role.STUDENT) {
+      const student = await prisma.student.findUnique({
+        where: { email: email.toLowerCase() },
+      });
+
+      if (!student) {
+        await prisma.user.delete({ where: { id: newUser.id } });
+        return errorResponse(
+          "No student profile found with this email. Import/create the student first, or use a matching student email.",
+          400
+        );
+      }
+
+      if (student.userId && student.userId !== newUser.id) {
+        await prisma.user.delete({ where: { id: newUser.id } });
+        return errorResponse(
+          "This student is already linked to another user account.",
+          409
+        );
+      }
+
+      await prisma.student.update({
+        where: { id: student.id },
+        data: {
+          userId: newUser.id,
+          ...(departmentId ? {} : { }),
+        },
+      });
+
+      // Ensure user's department matches the student
+      if (student.departmentId !== departmentId) {
+        await prisma.user.update({
+          where: { id: newUser.id },
+          data: { departmentId: student.departmentId },
+        });
+      }
+    }
+
     await logAuditAction(
       session.user.id,
       "USER_CREATED",
@@ -103,7 +143,7 @@ export async function POST(req: NextRequest) {
 
     return successResponse(newUser, 201);
   } catch (error: unknown) {
-    console.error("POST User Error:", error);
+    logger.error("POST User Error:", error);
     return errorResponse("Internal server error", 500);
   }
 }

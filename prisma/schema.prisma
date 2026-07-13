@@ -223,7 +223,6 @@ model Position {
 
   election          Election           @relation(fields: [electionId], references: [id], onDelete: Cascade)
   candidates        Candidate[]
-  voteRecords       VoteRecord[]
   anonymizedBallots AnonymizedBallot[]
   electionResults   ElectionResult[]
 }
@@ -270,14 +269,12 @@ model VoteRecord {
   id         String   @id @default(cuid())
   studentId  String
   electionId String
-  positionId String
   createdAt  DateTime @default(now())
 
   student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
-  position Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
 
-  @@unique([studentId, electionId, positionId])
+  @@unique([electionId, studentId])
 }
 
 model AnonymizedBallot {

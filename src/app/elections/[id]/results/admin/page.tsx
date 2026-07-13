@@ -1,44 +1,82 @@
 "use client";
+
 import { EmptyState } from "@/components/shared/EmptyState";
-
-
 import { useState, useEffect, use } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { LinkButton } from "@/components/ui/link-button";
+import { Roles } from "@/constants";
+import { AppPage } from "@/components/shared/AppPage";
+import { PageHeader } from "@/components/shared/PageHeader";
+
+type ResultsData = {
+  id: string;
+  title: string;
+  status: string;
+  totalTurnout: number;
+  isLive?: boolean;
+  positions: {
+    id: string;
+    title: string;
+    totalVotes: number;
+    candidates: {
+      id: string;
+      name: string;
+      voteCount: number;
+      percentage: number;
+      isTie: boolean;
+    }[];
+  }[];
+};
 
 export default function AdminResultsManager({ params }: { params: Promise<{ id: string }> }) {
   const { id: electionId } = use(params);
+  const { data: session, status: authStatus } = useSession();
+  const router = useRouter();
+  const role = session?.user?.role;
+  const isSuperAdmin = role === Roles.SUPER_ADMIN;
 
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
-    if (electionId) {
+    if (authStatus === "authenticated" && role === Roles.STUDENT) {
+      router.replace(`/elections/${electionId}/results`);
+    }
+  }, [authStatus, role, electionId, router]);
+
+  useEffect(() => {
+    if (electionId && role && role !== Roles.STUDENT) {
       fetchResults();
     }
-  }, [electionId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [electionId, role]);
 
   const fetchResults = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`/api/results/${electionId}`);
-      if (!res.ok) {
-        throw new Error(await res.text());
-      }
       const json = await res.json();
       if (json.success) {
         setData(json.data);
       } else {
+        setError(json.error || "Failed to load results");
         toast.error(json.error || "Failed to load results");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Network error");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Network error";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -59,8 +97,8 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
       } else {
         toast.error(json.error || "Failed to generate results");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Network error");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Network error");
     } finally {
       setGenerating(false);
     }
@@ -81,8 +119,8 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
       } else {
         toast.error(json.error || "Failed to publish results");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Network error");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Network error");
     } finally {
       setPublishing(false);
     }
@@ -90,33 +128,86 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <AppPage>
         <Skeleton className="h-10 w-1/4" />
         <Skeleton className="h-[400px] w-full" />
-      </div>
+      </AppPage>
     );
   }
 
-  if (!data) return <div>No data available.</div>;
+  if (error) {
+    return (
+      <AppPage>
+        <PageHeader title="Results" description="Access restricted for this election status." />
+        <EmptyState title="Cannot view results yet" description={error} />
+        <LinkButton href="/elections" variant="outline" className="rounded-full">
+          Back to Elections
+        </LinkButton>
+      </AppPage>
+    );
+  }
+
+  if (!data) return null;
+
+  const isLive = data.isLive || data.status === "VOTING_OPEN";
+  const canPublish =
+    data.status === "VOTING_CLOSED" || data.status === "RESULTS_GENERATED";
+  const alreadyPublished =
+    data.status === "PUBLISHED_RESULTS" || data.status === "ARCHIVED";
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Results Manager</h1>
-          <p className="text-muted-foreground">{data.title}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleGenerate} disabled={generating}>
-            {generating ? "Generating..." : "Generate Internal Counts"}
-          </Button>
-          <Button onClick={handlePublish} disabled={publishing || data.status === "PUBLISHED_RESULTS" || data.status === "ARCHIVED"}>
-            {publishing ? "Publishing..." : data.status === "PUBLISHED_RESULTS" ? "Already Published" : "Publish Results"}
-          </Button>
-          <Button variant="secondary" onClick={() => window.location.href = `/api/results/${electionId}/export/csv`}>
-            Export CSV
-          </Button>
-        </div>
+    <AppPage>
+      <PageHeader
+        title={isLive && isSuperAdmin ? "Live Election Report" : "Results Manager"}
+        description={
+          isLive
+            ? "Super Admin live tallies while voting is open. Department admins see results only after voting is closed."
+            : data.title
+        }
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="rounded-full" onClick={handleGenerate} disabled={generating}>
+              {generating
+                ? "Refreshing…"
+                : isLive
+                  ? "Refresh Live Tallies"
+                  : "Generate Results"}
+            </Button>
+            <Button
+              className="rounded-full"
+              onClick={handlePublish}
+              disabled={publishing || !canPublish || alreadyPublished}
+            >
+              {publishing
+                ? "Publishing…"
+                : alreadyPublished
+                  ? "Already Published"
+                  : "Publish Results"}
+            </Button>
+            <Button
+              variant="secondary"
+              className="rounded-full"
+              onClick={() => {
+                window.location.href = `/api/results/${electionId}/export/csv`;
+              }}
+            >
+              Export CSV
+            </Button>
+            <LinkButton href="/elections" variant="ghost" className="rounded-full">
+              Elections
+            </LinkButton>
+          </div>
+        }
+      />
+
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <h2 className="text-lg font-semibold">{data.title}</h2>
+        {isLive && (
+          <Badge className="bg-amber-600 hover:bg-amber-700 text-white border-0">
+            Live — Super Admin only
+          </Badge>
+        )}
+        {alreadyPublished && <Badge variant="default">Published</Badge>}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -125,7 +216,7 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
             <CardTitle className="text-sm font-medium">Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.status}</div>
+            <div className="text-2xl font-bold">{data.status.replace(/_/g, " ")}</div>
           </CardContent>
         </Card>
         <Card>
@@ -139,21 +230,21 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
       </div>
 
       <div className="space-y-6">
-        {data.positions.map((pos: any) => (
+        {data.positions.map((pos) => (
           <Card key={pos.id}>
             <CardHeader>
               <CardTitle>{pos.title}</CardTitle>
               <p className="text-sm text-muted-foreground">Total Votes: {pos.totalVotes}</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {pos.candidates.map((cand: any) => (
-                <div key={cand.id} className="space-y-1 border p-4 rounded-md">
-                  <div className="flex justify-between items-center">
-                    <div className="font-medium flex items-center gap-2">
+              {pos.candidates.map((cand) => (
+                <div key={cand.id} className="space-y-1 rounded-md border p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 font-medium">
                       {cand.name}
                       {cand.isTie && <Badge variant="secondary">Tie</Badge>}
                     </div>
-                    <div className="text-sm text-muted-foreground font-semibold">
+                    <div className="text-sm font-semibold text-muted-foreground">
                       {cand.voteCount} votes ({cand.percentage}%)
                     </div>
                   </div>
@@ -161,12 +252,15 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
                 </div>
               ))}
               {pos.candidates.length === 0 && (
-                <EmptyState title="No candidates or votes" description="There are no candidates or votes calculated for this position yet." />
+                <EmptyState
+                  title="No candidates or votes"
+                  description="Generate tallies after votes have been cast."
+                />
               )}
             </CardContent>
           </Card>
         ))}
       </div>
-    </div>
+    </AppPage>
   );
 }

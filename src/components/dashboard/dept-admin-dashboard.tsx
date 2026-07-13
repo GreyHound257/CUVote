@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { ChartTooltipContent } from "./chart-styles";
 import { Users, Vote, UserCheck, Activity, Printer } from "lucide-react";
 import { SearchFilter } from "./search-filter";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 export function DeptAdminDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
     fetch("/api/dashboard/dept-admin")
@@ -42,10 +45,6 @@ export function DeptAdminDashboard() {
   const participationRate = metrics.totalStudents > 0
     ? Math.round((metrics.eligibleStudents / metrics.totalStudents) * 100)
     : 0;
-
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
 
   const handleSearch = (term: string) => setSearchTerm(term);
   const handleFilterChange = (filterType: string, value: string) => {
@@ -160,7 +159,7 @@ export function DeptAdminDashboard() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip content={<ChartTooltipContent />} />
                 </PieChart>
               </ResponsiveContainer>
             </div>

@@ -13,8 +13,8 @@ const emailSchema = z
   .email("Invalid email format")
   .toLowerCase()
   .refine(
-    (email) => email.endsWith("@student.covenantuniversity.edu.ng"),
-    "Email must be a valid @student.covenantuniversity.edu.ng address"
+    (email) => email.endsWith("@stu.cu.edu.ng"),
+    "Email must be a valid @stu.cu.edu.ng address"
   );
 
 export const createStudentSchema = z.object({

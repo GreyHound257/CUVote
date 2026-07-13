@@ -11,6 +11,8 @@ export const metadata = {
   description: "CUVote interactive dashboard.",
 };
 
+import { AppPage } from "@/components/shared/AppPage";
+
 export default async function DashboardPage() {
   const session = await auth();
 
@@ -21,10 +23,10 @@ export default async function DashboardPage() {
   const { role } = session.user;
 
   return (
-    <div className="w-full">
+    <AppPage>
       {role === "SUPER_ADMIN" && <Suspense fallback={<LoadingState message="Loading dashboard..." />}><SuperAdminDashboard /></Suspense>}
       {role === "DEPARTMENT_ADMIN" && <Suspense fallback={<LoadingState message="Loading dashboard..." />}><DeptAdminDashboard /></Suspense>}
       {role === "STUDENT" && <Suspense fallback={<LoadingState message="Loading dashboard..." />}><StudentDashboard /></Suspense>}
-    </div>
+    </AppPage>
   );
 }

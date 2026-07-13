@@ -63,7 +63,11 @@ export function UserForm({ initialData, isEdit }: UserFormProps) {
 
       const json = await res.json();
       if (json.success) {
-        toast.success(isEdit ? "User updated successfully" : "User created successfully. Password setup required on first login.");
+        toast.success(
+          isEdit
+            ? "User updated successfully"
+            : "User created. If Student role, they must set a password via Login → Set your password."
+        );
         router.push("/users");
       } else {
         toast.error(json.error || "An error occurred");
@@ -92,13 +96,23 @@ export function UserForm({ initialData, isEdit }: UserFormProps) {
       <div className="space-y-2">
         <label className="text-sm font-medium">Role</label>
         <Select
-          value={watch("role")}
-          onValueChange={(val: Role | null) => val && setValue("role", val)}
+          value={watch("role") ?? null}
+          onValueChange={(val: Role | null) => {
+            if (!val) return;
+            setValue("role", val);
+            if (val === "SUPER_ADMIN") setValue("departmentId", null);
+          }}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Select role" />
+          <SelectTrigger className="w-full rounded-full">
+            <SelectValue placeholder="Select role">
+              {{
+                SUPER_ADMIN: "Super Admin",
+                DEPARTMENT_ADMIN: "Department Admin",
+                STUDENT: "Student",
+              }[watch("role") as Role] ?? null}
+            </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-[200]">
             <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
             <SelectItem value="DEPARTMENT_ADMIN">Department Admin</SelectItem>
             <SelectItem value="STUDENT">Student</SelectItem>
@@ -111,16 +125,23 @@ export function UserForm({ initialData, isEdit }: UserFormProps) {
          <div className="space-y-2">
            <label className="text-sm font-medium">Department</label>
            <Select
-             value={watch("departmentId") || undefined}
-             onValueChange={(val: string | null) => val && setValue("departmentId", val)}
+             // Always controlled: use null, never undefined
+             value={watch("departmentId") ?? null}
+             onValueChange={(val: string | null) => setValue("departmentId", val || null)}
            >
-             <SelectTrigger>
-               <SelectValue placeholder="Select department" />
+             <SelectTrigger className="w-full rounded-full">
+               <SelectValue placeholder="Select department">
+                 {departments.find((d) => d.id === watch("departmentId"))?.name ?? null}
+               </SelectValue>
              </SelectTrigger>
-             <SelectContent>
-                {departments.map(d => (
-                   <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                ))}
+             <SelectContent className="z-[200]">
+                {departments.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">No departments available</div>
+                ) : (
+                  departments.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))
+                )}
              </SelectContent>
            </Select>
            {errors.departmentId && <p className="text-sm text-destructive">{errors.departmentId.message}</p>}
@@ -131,13 +152,15 @@ export function UserForm({ initialData, isEdit }: UserFormProps) {
          <div className="space-y-2">
            <label className="text-sm font-medium">Status</label>
            <Select
-             value={watch("status")}
+             value={watch("status") ?? null}
              onValueChange={(val: "ACTIVE" | "SUSPENDED" | "DELETED" | null) => val && setValue("status", val)}
            >
-             <SelectTrigger>
-               <SelectValue placeholder="Select status" />
+             <SelectTrigger className="w-full rounded-full">
+               <SelectValue placeholder="Select status">
+                 {watch("status") === "SUSPENDED" ? "Suspended" : "Active"}
+               </SelectValue>
              </SelectTrigger>
-             <SelectContent>
+             <SelectContent className="z-[200]">
                <SelectItem value="ACTIVE">Active</SelectItem>
                <SelectItem value="SUSPENDED">Suspended</SelectItem>
              </SelectContent>

@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { setupWizardSchema, SetupWizardInput } from "@/validation/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Routes } from "@/constants";
 
@@ -55,46 +57,58 @@ export default function SetupPage() {
     }
   };
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-muted/40">
-      <div className="mx-auto w-full max-w-md space-y-6 bg-card p-8 shadow rounded-lg border">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold">Welcome to CUVote</h1>
-          <p className="text-muted-foreground">Setup the initial Super Administrator account.</p>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Full Name</label>
-            <Input {...register("name")} placeholder="John Doe" />
-            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-muted/30 p-4">
+      <Card className="relative w-full max-w-md border-border/50 bg-card/80 shadow-lg backdrop-blur-sm">
+        <CardHeader className="space-y-4 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <Settings className="h-7 w-7 text-primary" />
           </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
-            <Input {...register("email")} type="email" placeholder="admin@covenant.edu" />
-            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+          <div className="space-y-1">
+            <CardTitle className="text-2xl">Welcome to CUVote</CardTitle>
+            <CardDescription>Set up the initial Super Administrator account</CardDescription>
           </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input id="name" {...register("name")} placeholder="John Doe" className="rounded-full focus-visible:ring-primary/20" />
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+            </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Password</label>
-            <Input {...register("password")} type="password" />
-            {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" {...register("email")} type="email" placeholder="admin@covenant.edu" className="rounded-full focus-visible:ring-primary/20" />
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Confirm Password</label>
-            <Input {...register("confirmPassword")} type="password" />
-            {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" {...register("password")} type="password" className="rounded-full focus-visible:ring-primary/20" />
+              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+            </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...</> : "Complete Setup"}
-          </Button>
-        </form>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input id="confirmPassword" {...register("confirmPassword")} type="password" className="rounded-full focus-visible:ring-primary/20" />
+              {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
+            </div>
+
+            <Button type="submit" className="w-full rounded-full" disabled={isSubmitting}>
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...</> : "Complete Setup"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

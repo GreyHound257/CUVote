@@ -1,10 +1,10 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 import { FileDown, Download } from "lucide-react";
 import { ReportCard } from "./report-card";
-import Link from "next/link";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export const metadata = {
   title: "Reports & Exports - CUVote",
@@ -50,14 +50,14 @@ export default async function ReportsPage() {
 
   return (
     <div className="w-full space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">System Reports</h2>
-        <p className="text-muted-foreground">Generate and export administrative reports.</p>
-      </div>
+      <PageHeader
+        title="System Reports"
+        description="Generate and export administrative reports."
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         {availableReports.map(report => (
-          <Card key={report.id}>
+          <Card key={report.id} className="border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileDown className="h-5 w-5" />
@@ -66,11 +66,14 @@ export default async function ReportsPage() {
               <CardDescription>{report.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" render={<Link href={`/api/reports/export?type=${report.id}`} target="_blank" className="flex items-center" />}>
-                <span className="flex items-center">
-                  <Download className="mr-2 h-4 w-4" /> Download CSV
-                </span>
-              </Button>
+              <LinkButton
+                href={`/api/reports/export?type=${report.id}`}
+                target="_blank"
+                className="w-full rounded-full"
+                linkClassName="flex items-center justify-center"
+              >
+                <Download className="mr-2 h-4 w-4" /> Download CSV
+              </LinkButton>
             </CardContent>
           </Card>
         ))}

@@ -2,7 +2,6 @@ import { logger } from "@/utils/logger";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { ResultService } from "@/services/resultService";
-import { Roles } from "@/constants";
 
 export async function GET(
   req: Request,
@@ -10,15 +9,8 @@ export async function GET(
 ) {
   try {
     const session = await auth();
-
-    // Default to false, verify if Admin
-    let isAdmin = false;
-    if (
-      session &&
-      (session.user.role === Roles.SUPER_ADMIN ||
-        session.user.role === Roles.DEPARTMENT_ADMIN)
-    ) {
-      isAdmin = true;
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const { electionId } = await params;
@@ -30,22 +22,27 @@ export async function GET(
       );
     }
 
-    const data = await ResultService.getResults(electionId, isAdmin);
+    const data = await ResultService.getResults(electionId, {
+      role: session.user.role,
+      departmentId: session.user.departmentId,
+    });
 
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
     logger.error("Get Results Error:", error);
+    const message = error instanceof Error ? error.message : "Internal Server Error";
 
-    // If error is about not published, return 403 Forbidden
-    if ((error instanceof Error ? error.message : "Internal Server Error") === "Results are not yet published for this election.") {
-      return NextResponse.json(
-        { success: false, error: (error instanceof Error ? error.message : "Internal Server Error") },
-        { status: 403 }
-      );
+    if (
+      message.includes("not yet published") ||
+      message.includes("only after") ||
+      message.includes("Forbidden") ||
+      message.includes("only available")
+    ) {
+      return NextResponse.json({ success: false, error: message }, { status: 403 });
     }
 
     return NextResponse.json(
-      { success: false, error: (error instanceof Error ? error.message : "Internal Server Error") || "Failed to fetch results" },
+      { success: false, error: message || "Failed to fetch results" },
       { status: 500 }
     );
   }

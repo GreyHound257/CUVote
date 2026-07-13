@@ -76,7 +76,7 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
           placeholder="Search by student name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
+          className="max-w-sm rounded-full focus-visible:ring-primary/20"
         />
         {!showApprovalQueue && (
           <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || "ALL")}>
@@ -95,7 +95,7 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
         )}
       </div>
 
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
         <Table>
           <TableHeader>
             <TableRow>

@@ -98,7 +98,7 @@ export async function POST(req: Request) {
       userId: session.user.id,
     });
 
-    return NextResponse.json(candidate, { status: 201 });
+    return NextResponse.json({ success: true, data: candidate }, { status: 201 });
   } catch (error: unknown) {
     return NextResponse.json({ error: (error instanceof Error ? error.message : "Internal Server Error") }, { status: 400 });
   }

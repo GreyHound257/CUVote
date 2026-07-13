@@ -49,9 +49,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "Vote submitted successfully" });
   } catch (error: unknown) {
     logger.error("Error in submit vote API:", error);
-    const status = (error instanceof Error ? error.message : "Internal Server Error").includes("Duplicate voting attempt") ? 409 : 400;
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    const isDuplicateVote = message.includes("already voted");
+    const status = isDuplicateVote ? 409 : 400;
     return NextResponse.json(
-      { error: (error instanceof Error ? error.message : "Internal Server Error") || "Failed to submit vote" },
+      { error: message || "Failed to submit vote" },
       { status }
     );
   }

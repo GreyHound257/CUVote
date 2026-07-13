@@ -21,8 +21,20 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
 
-      // Protect these routes
-      const protectedPaths = ["/dashboard", "/departments", "/users", "/profile", "/settings"];
+      // Protect app routes (not /api — APIs enforce auth themselves)
+  const protectedPaths = [
+    "/dashboard",
+    "/departments",
+    "/users",
+    "/students",
+    "/elections",
+    "/candidates",
+    "/profile",
+    "/settings",
+    "/reports",
+    "/audit-logs",
+    "/vote",
+  ];
       const isProtectedRoute = protectedPaths.some(path => nextUrl.pathname.startsWith(path));
 
       const isOnLogin = nextUrl.pathname.startsWith("/login");

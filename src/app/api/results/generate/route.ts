@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const session = await auth();
 
     if (
-      !session ||
+      !session?.user ||
       (session.user.role !== Roles.SUPER_ADMIN &&
         session.user.role !== Roles.DEPARTMENT_ADMIN)
     ) {
@@ -25,18 +25,22 @@ export async function POST(req: Request) {
     }
     const { electionId } = parsed.data;
 
-    if (!electionId) {
-      return NextResponse.json({ success: false, error: "Missing electionId" }, { status: 400 });
-    }
-
-    const result = await ResultService.generateResults(electionId, session.user.id);
+    const result = await ResultService.generateResults(electionId, session.user.id, {
+      role: session.user.role,
+      departmentId: session.user.departmentId,
+    });
 
     return NextResponse.json(result);
   } catch (error: unknown) {
     logger.error("Generate Results Error:", error);
-    return NextResponse.json(
-      { success: false, error: (error instanceof Error ? error.message : "Internal Server Error") || "Failed to generate results" },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    const status =
+      message.includes("only after") ||
+      message.includes("Forbidden") ||
+      message.includes("Unauthorized") ||
+      message.includes("Cannot generate")
+        ? 403
+        : 500;
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }

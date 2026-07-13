@@ -1,8 +1,9 @@
-import { logger } from "@/utils/logger";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { VotingService } from "@/services/votingService";
+import { Role } from "@prisma/client";
+import { logger } from "@/utils/logger";
 
 export async function GET(req: Request) {
   try {
@@ -11,13 +12,22 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Ensure the user is a student and we have their student record
+    if (session.user.role !== Role.STUDENT) {
+      return NextResponse.json(
+        { error: "Only students can access the voting dashboard. Please log in with a student account." },
+        { status: 403 }
+      );
+    }
+
     const student = await prisma.student.findUnique({
       where: { userId: session.user.id },
     });
 
     if (!student) {
-      return NextResponse.json({ error: "Student record not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "No student profile linked to your account. Contact your administrator." },
+        { status: 404 }
+      );
     }
 
     const elections = await VotingService.getActiveElections(student.id, student.departmentId);

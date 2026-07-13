@@ -29,7 +29,7 @@ export function SearchFilter({ onSearch, onFilterChange, filterOptions = [], pla
           placeholder={placeholder}
           value={searchTerm}
           onChange={handleSearch}
-          className="pl-8"
+          className="pl-8 rounded-full focus-visible:ring-primary/20"
         />
       </div>
 

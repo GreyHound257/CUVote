@@ -1,9 +1,8 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 import { FileDown, Download } from "lucide-react";
-import Link from "next/link";
 import { SearchFilter } from "@/components/dashboard/search-filter";
 import { useState } from "react";
 
@@ -39,11 +38,9 @@ export function ReportCard({ report }: { report: any }) {
             ]}
           />
         )}
-        <Button className="w-full" render={<Link href={exportUrl} target="_blank" className="flex items-center" />}>
-          <span className="flex items-center">
-            <Download className="mr-2 h-4 w-4" /> Download CSV
-          </span>
-        </Button>
+        <LinkButton href={exportUrl} target="_blank" className="w-full rounded-full" linkClassName="flex items-center justify-center">
+          <Download className="mr-2 h-4 w-4" /> Download CSV
+        </LinkButton>
       </CardContent>
     </Card>
   );

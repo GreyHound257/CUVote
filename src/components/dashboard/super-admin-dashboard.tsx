@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { ChartTooltipContent } from "./chart-styles";
 import { Users, Building2, Vote, ShieldCheck, Activity, Printer } from "lucide-react";
 import { SearchFilter } from "./search-filter";
 import { Button } from "@/components/ui/button";
@@ -133,7 +134,7 @@ export function SuperAdminDashboard() {
                 <BarChart data={deptChartData}>
                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip />
+                  <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="Students" fill="currentColor" className="fill-primary" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="Elections" fill="currentColor" className="fill-muted-foreground" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -163,7 +164,7 @@ export function SuperAdminDashboard() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip content={<ChartTooltipContent />} />
                 </PieChart>
               </ResponsiveContainer>
             </div>

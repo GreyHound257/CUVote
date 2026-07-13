@@ -36,6 +36,7 @@ describe('ResultService', () => {
       (prisma.election.findUnique as any).mockResolvedValue({
         id: 'e1',
         status: ElectionStatus.VOTING_CLOSED,
+        departmentId: 'd1',
         positions: [
           {
             id: 'p1',
@@ -51,7 +52,10 @@ describe('ResultService', () => {
         { positionId: 'p1', candidateId: 'c3', _count: { candidateId: 20 } },
       ]);
 
-      const result = await ResultService.generateResults('e1', 'admin1');
+      const result = await ResultService.generateResults('e1', 'admin1', {
+        role: 'SUPER_ADMIN',
+        departmentId: null,
+      });
 
       expect(prisma.electionResult.deleteMany).toHaveBeenCalledWith({ where: { electionId: 'e1' } });
 

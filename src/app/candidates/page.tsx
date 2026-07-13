@@ -1,18 +1,32 @@
-import { CandidateListBoard } from "@/components/candidates/CandidateListBoard";
-import { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Candidates | CUVote",
-  description: "Manage election candidates",
-};
+import { useState } from "react";
+import { CandidateListBoard } from "@/components/candidates/CandidateListBoard";
+import { CandidateNominationDialog } from "@/components/candidates/CandidateNominationDialog";
+import { AppPage } from "@/components/shared/AppPage";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { LinkButton } from "@/components/ui/link-button";
+import { Routes } from "@/constants";
+import { ClipboardCheck } from "lucide-react";
 
 export default function CandidatesPage() {
+  const [refreshKey, setRefreshKey] = useState(0);
+
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Candidates</h2>
-      </div>
-      <CandidateListBoard />
-    </div>
+    <AppPage>
+      <PageHeader
+        title="Candidates"
+        description="Nominate students and manage candidate profiles."
+        action={
+          <div className="flex flex-wrap gap-2">
+            <LinkButton href={Routes.CANDIDATE_APPROVALS} variant="outline" className="rounded-full">
+              <ClipboardCheck className="mr-2 h-4 w-4" /> Approvals
+            </LinkButton>
+            <CandidateNominationDialog onSuccess={() => setRefreshKey((k) => k + 1)} />
+          </div>
+        }
+      />
+      <CandidateListBoard key={refreshKey} />
+    </AppPage>
   );
 }

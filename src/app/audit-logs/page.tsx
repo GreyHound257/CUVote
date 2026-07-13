@@ -64,8 +64,8 @@ export default function AuditLogsPage() {
       const json = await res.json();
       setLogs(json.data.data);
       setTotalPages(json.data.pagination.totalPages);
-    } catch (err: any) {
-      setError(err.message);
+    }catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }

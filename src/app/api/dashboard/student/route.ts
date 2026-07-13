@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/utils/logger";
 
 export async function GET(request: Request) {
   try {
@@ -46,7 +47,6 @@ export async function GET(request: Request) {
         where: { studentId: student.id },
         include: {
           election: { select: { id: true, title: true, status: true } },
-          position: { select: { id: true, title: true } }
         },
         orderBy: { createdAt: 'desc' },
         take: 10
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error("Student Dashboard Error:", error);
+    logger.error("Student Dashboard Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

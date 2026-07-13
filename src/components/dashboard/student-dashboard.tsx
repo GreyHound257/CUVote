@@ -3,15 +3,17 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LinkButton } from "@/components/ui/link-button";
 import { Vote, Calendar, Clock, History, FileText } from "lucide-react";
 import { SearchFilter } from "./search-filter";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export function StudentDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
     fetch("/api/dashboard/student")
@@ -32,10 +34,6 @@ export function StudentDashboard() {
 
   const { profile, elections, history } = data;
 
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-
   const handleSearch = (term: string) => setSearchTerm(term);
   const handleFilterChange = (filterType: string, value: string) => {
     if (filterType === "status") setStatusFilter(value);
@@ -48,10 +46,10 @@ export function StudentDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Student Dashboard</h2>
-        <p className="text-muted-foreground">Welcome back, {profile.fullName}. Here's your voting overview.</p>
-      </div>
+      <PageHeader
+        title="Student Dashboard"
+        description={`Welcome back, ${profile.fullName}. Here's your voting overview.`}
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -107,9 +105,9 @@ export function StudentDashboard() {
                     {election.hasVoted ? (
                       <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Voted Successfully</Badge>
                     ) : (
-                      <Button disabled={!profile.isEligible} render={<Link href={`/vote/${election.id}`} />}>
-                        <span>Go to Voting</span>
-                      </Button>
+                      <LinkButton href={`/vote/${election.id}`} disabled={!profile.isEligible}>
+                        Go to Voting
+                      </LinkButton>
                     )}
                   </div>
                 ))}
@@ -130,9 +128,9 @@ export function StudentDashboard() {
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       <p className="font-medium">{election.title}</p>
                     </div>
-                    <Button variant="outline" size="sm" render={<Link href={`/elections/${election.id}/results`} />}>
-                      <span>View Results</span>
-                    </Button>
+                    <LinkButton href={`/elections/${election.id}/results`} variant="outline" size="sm">
+                      View Results
+                    </LinkButton>
                   </div>
                 ))}
                 {elections.publishedResults.length === 0 && <p className="text-sm text-muted-foreground">No published results available.</p>}
@@ -169,8 +167,8 @@ export function StudentDashboard() {
                 {history.map((record: any) => (
                   <div key={record.id} className="flex items-center justify-between text-sm border-b pb-2 last:border-0 last:pb-0">
                     <div>
-                      <p className="font-medium">Voted: {record.position.title}</p>
-                      <p className="text-muted-foreground text-xs">{record.election.title}</p>
+                      <p className="font-medium">Voted in: {record.election.title}</p>
+                      <p className="text-muted-foreground text-xs">Ballot submitted</p>
                     </div>
                     <span className="text-xs text-muted-foreground">{new Date(record.createdAt).toLocaleString()}</span>
                   </div>

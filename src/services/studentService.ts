@@ -78,7 +78,58 @@ export class StudentService {
   }
 
   /**
-   * Creates a single student record.
+   * Ensure a STUDENT User exists for this email and return its id.
+   * Password stays null so the student can complete /onboarding.
+   */
+  static async ensureStudentUser(params: {
+    email: string;
+    fullName: string;
+    departmentId: string;
+  }): Promise<string> {
+    const email = params.email.toLowerCase();
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      if (existingUser.role !== "STUDENT") {
+        throw new Error(
+          `Email ${email} belongs to a ${existingUser.role} account and cannot be linked as a student.`
+        );
+      }
+
+      const alreadyLinked = await prisma.student.findUnique({
+        where: { userId: existingUser.id },
+        select: { id: true },
+      });
+      if (alreadyLinked) {
+        throw new Error(`User account for ${email} is already linked to another student profile.`);
+      }
+
+      // Keep department in sync when possible
+      if (existingUser.departmentId !== params.departmentId) {
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { departmentId: params.departmentId, name: existingUser.name || params.fullName },
+        });
+      }
+
+      return existingUser.id;
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        name: params.fullName,
+        role: "STUDENT",
+        departmentId: params.departmentId,
+        status: "ACTIVE",
+      },
+    });
+
+    return user.id;
+  }
+
+  /**
+   * Creates a single student record and provisions a linked login account.
    */
   static async createStudent(data: Prisma.StudentUncheckedCreateInput) {
     const validData = createStudentSchema.parse(data);
@@ -94,11 +145,22 @@ export class StudentService {
       throw new Error("A student with this email or matriculation number already exists.");
     }
 
+    const userId = await this.ensureStudentUser({
+      email: validData.email,
+      fullName: validData.fullName,
+      departmentId: validData.departmentId,
+    });
+
     return await prisma.student.create({
       data: {
         ...validData,
-        status: "ACTIVE", // Default
-        isEligible: true, // Default
+        email: validData.email.toLowerCase(),
+        userId,
+        status: "ACTIVE",
+        isEligible: true,
+      },
+      include: {
+        user: { select: { id: true, email: true, passwordHash: true } },
       },
     });
   }
@@ -157,6 +219,51 @@ export class StudentService {
   }
 
   /**
+   * Creates linked User accounts for students that were imported before auto-provisioning.
+   */
+  static async provisionMissingUsers(allowedDepartmentId?: string) {
+    const where: Prisma.StudentWhereInput = { userId: null };
+    if (allowedDepartmentId) {
+      where.departmentId = allowedDepartmentId;
+    }
+
+    const unlinked = await prisma.student.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        matricNo: true,
+        departmentId: true,
+      },
+    });
+
+    let linked = 0;
+    const errors: string[] = [];
+
+    for (const student of unlinked) {
+      try {
+        const userId = await this.ensureStudentUser({
+          email: student.email,
+          fullName: student.fullName,
+          departmentId: student.departmentId,
+        });
+        await prisma.student.update({
+          where: { id: student.id },
+          data: { userId },
+        });
+        linked++;
+      } catch (err: unknown) {
+        errors.push(
+          `${student.matricNo}: ${err instanceof Error ? err.message : "Unknown error"}`
+        );
+      }
+    }
+
+    return { linked, total: unlinked.length, errors };
+  }
+
+  /**
    * Bulk imports students from CSV text.
    */
   static async importFromCsv(csvText: string, allowedDepartmentId?: string) {
@@ -196,22 +303,43 @@ export class StudentService {
         // Check if student exists
         const existing = await prisma.student.findFirst({
           where: {
-            OR: [{ email: parsed.email }, { matricNo: parsed.matricNo }],
+            OR: [{ email: parsed.email.toLowerCase() }, { matricNo: parsed.matricNo }],
           },
         });
 
         if (existing) {
+          // Older imports may lack a linked login — provision without re-creating the student
+          if (!existing.userId) {
+            const userId = await this.ensureStudentUser({
+              email: existing.email,
+              fullName: existing.fullName,
+              departmentId: existing.departmentId,
+            });
+            await prisma.student.update({
+              where: { id: existing.id },
+              data: { userId },
+            });
+            imported++;
+            continue;
+          }
           skipped++;
-          continue; // Skip duplicate
+          continue;
         }
+
+        const userId = await this.ensureStudentUser({
+          email: parsed.email,
+          fullName: parsed.fullName,
+          departmentId,
+        });
 
         await prisma.student.create({
           data: {
             matricNo: parsed.matricNo,
             fullName: parsed.fullName,
-            email: parsed.email,
+            email: parsed.email.toLowerCase(),
             level: parsed.level,
             departmentId,
+            userId,
             status: "ACTIVE",
             isEligible: true,
           },

@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger
@@ -182,48 +183,46 @@ export default function UsersPage() {
         const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
         const isSelf = session?.user?.id === user.id;
 
-        return (
+return (
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" className="h-8 w-8 p-0" render={
-                <div>
-                  <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
-                </div>
-              } />
+            <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => router.push(`/users/${user.id}`)}>
-                View Details
-              </DropdownMenuItem>
-              {isSuperAdmin && (
-                <DropdownMenuItem onClick={() => router.push(`/users/${user.id}/edit`)}>
-                  Edit
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => router.push(`/users/${user.id}`)}>
+                  View Details
                 </DropdownMenuItem>
-              )}
-              {isSuperAdmin && !isSelf && user.role !== "SUPER_ADMIN" && (
-                <>
-                  <DropdownMenuItem onClick={() => setUserToReset(user)}>
-                    Reset Password
+                {isSuperAdmin && (
+                  <DropdownMenuItem onClick={() => router.push(`/users/${user.id}/edit`)}>
+                    Edit
                   </DropdownMenuItem>
-                  {user.status === "ACTIVE" && (
-                    <DropdownMenuItem onClick={() => handleAction(user.id, "suspend")}>
-                      Suspend
+                )}
+                {isSuperAdmin && !isSelf && user.role !== "SUPER_ADMIN" && (
+                  <>
+                    <DropdownMenuItem onClick={() => setUserToReset(user)}>
+                      Reset Password
                     </DropdownMenuItem>
-                  )}
-                  {user.status === "SUSPENDED" && (
-                    <DropdownMenuItem onClick={() => handleAction(user.id, "activate")}>
-                      Activate
-                    </DropdownMenuItem>
-                  )}
-                  {user.status !== "DELETED" && (
-                    <DropdownMenuItem onClick={() => setUserToDelete(user)} className="text-destructive">
-                      Delete
-                    </DropdownMenuItem>
-                  )}
-                </>
-              )}
+                    {user.status === "ACTIVE" && (
+                      <DropdownMenuItem onClick={() => handleAction(user.id, "suspend")}>
+                        Suspend
+                      </DropdownMenuItem>
+                    )}
+                    {user.status === "SUSPENDED" && (
+                      <DropdownMenuItem onClick={() => handleAction(user.id, "activate")}>
+                        Activate
+                      </DropdownMenuItem>
+                    )}
+                    {user.status !== "DELETED" && (
+                      <DropdownMenuItem onClick={() => setUserToDelete(user)} className="text-destructive">
+                        Delete
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         );

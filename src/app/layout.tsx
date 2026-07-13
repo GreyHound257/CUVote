@@ -14,8 +14,7 @@ const geistMono = Geist_Mono({
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
-import { TopNav } from "@/components/layout/TopNav";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { LayoutShell } from "@/components/layout/LayoutShell";
 import { Toaster } from "sonner";
 import { SessionProvider } from "next-auth/react";
 
@@ -44,16 +43,8 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <TooltipProvider>
-              <div className="flex flex-col h-screen">
-                <TopNav />
-                <div className="flex flex-1 overflow-hidden">
-                  <Sidebar />
-                  <main className="flex-1 overflow-y-auto p-4 md:p-8">
-                    {children}
-                  </main>
-                </div>
-              </div>
-              <Toaster />
+              <LayoutShell>{children}</LayoutShell>
+              <Toaster richColors position="top-right" />
             </TooltipProvider>
           </ThemeProvider>
         </SessionProvider>
