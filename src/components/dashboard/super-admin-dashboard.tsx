@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 export function SuperAdminDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
     fetch("/api/dashboard/super-admin")
@@ -45,8 +47,8 @@ export function SuperAdminDashboard() {
   }));
 
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+
+
 
   const handleSearch = (term: string) => setSearchTerm(term);
   const handleFilterChange = (filterType: string, value: string) => {

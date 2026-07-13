@@ -23,7 +23,7 @@ declare module "next-auth" {
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { loginSchema } from "@/validation/auth";
-import { logAuditAction } from "./audit";
+
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
