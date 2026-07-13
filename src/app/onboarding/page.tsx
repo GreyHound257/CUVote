@@ -1,5 +1,8 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
+
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -69,7 +72,7 @@ export default function OnboardPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Set Password"}
+            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Set Password"}
           </Button>
         </form>
       </div>

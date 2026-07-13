@@ -1,5 +1,8 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
+
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createDepartmentSchema, CreateDepartmentInput } from "@/validation/department";
@@ -102,7 +105,7 @@ export function DepartmentForm({ initialData, isEdit }: DepartmentFormProps) {
 
       <div className="flex gap-4">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : isEdit ? "Update Department" : "Create Department"}
+          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : isEdit ? "Update Department" : "Create Department"}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Cancel

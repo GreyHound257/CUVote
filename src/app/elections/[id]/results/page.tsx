@@ -1,5 +1,7 @@
 "use client";
 
+import { EmptyState } from "@/components/shared/EmptyState";
+
 import { useState, useEffect, use } from "react";
 import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";

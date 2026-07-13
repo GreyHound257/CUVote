@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { Role } from "@prisma/client";
 
 interface UserFormProps {
@@ -147,7 +148,7 @@ export function UserForm({ initialData, isEdit }: UserFormProps) {
 
       <div className="flex gap-4">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : isEdit ? "Update User" : "Create User"}
+          {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : isEdit ? "Update User" : "Create User"}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Cancel

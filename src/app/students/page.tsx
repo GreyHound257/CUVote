@@ -1,4 +1,8 @@
 "use client";
+
+import { LoadingState } from "@/components/shared/LoadingState";
+import { EmptyState } from "@/components/shared/EmptyState";
+
 import { logger } from "@/utils/logger";
 
 import React, { useState, useEffect } from "react";
@@ -211,7 +215,7 @@ export default function StudentsPage() {
           <TableBody>
             {loading ? (
                 <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">Loading...</TableCell>
+                    <TableCell colSpan={columns.length}><LoadingState message="Loading students..." /></TableCell>
                 </TableRow>
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
@@ -226,7 +230,7 @@ export default function StudentsPage() {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No students found.
+                  <EmptyState title="No students found" description="There are no students matching your search criteria." />
                 </TableCell>
               </TableRow>
             )}

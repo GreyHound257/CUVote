@@ -1,12 +1,12 @@
 "use client";
 import { logger } from "@/utils/logger";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Routes, Roles } from "@/constants";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { BellIcon } from "lucide-react";
+import { BellIcon, Menu, X } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 
@@ -50,7 +50,7 @@ function NotificationCenter() {
 
   return (
     <Popover>
-      <PopoverTrigger render={<Button variant="ghost" size="icon" className="relative" />}>
+      <PopoverTrigger render={<Button variant="ghost" size="icon" className="relative min-w-[44px] min-h-[44px]"><span className="sr-only">Notifications</span></Button>}>
         <BellIcon className="h-5 w-5" />
         {unreadCount > 0 && (
           <Badge variant="destructive" className="absolute -top-1 -right-1 px-1.5 min-w-5 h-5 flex items-center justify-center rounded-full text-[10px]">
@@ -96,33 +96,46 @@ function NotificationCenter() {
 
 export function TopNav() {
   const { data: session } = useSession();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="flex items-center justify-between p-4 border-b">
-      <div className="font-bold text-xl">
-        <Link href={Routes.HOME}>CUVote</Link>
+    <header className="flex flex-col md:flex-row items-center justify-between p-4 border-b">
+      <div className="flex w-full md:w-auto items-center justify-between">
+        <div className="font-bold text-xl">
+          <Link href={Routes.HOME}>CUVote</Link>
+        </div>
+        <div className="md:hidden flex items-center gap-2">
+          {session?.user && <NotificationCenter />}
+          <Button variant="ghost" size="icon" className="min-w-[44px] min-h-[44px]" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+        </div>
       </div>
-      <nav className="flex items-center gap-4">
-        <Link href={Routes.DASHBOARD} className="text-sm font-medium hover:underline">
+
+      <nav className={`flex-col md:flex-row items-center gap-4 w-full md:w-auto mt-4 md:mt-0 ${mobileMenuOpen ? "flex" : "hidden md:flex"}`}>
+        <Link href={Routes.DASHBOARD} className="text-sm font-medium hover:underline p-2 min-h-[44px] flex items-center">
           Dashboard
         </Link>
         {session?.user ? (
           <>
             {session.user.role !== Roles.STUDENT && (
-              <Link href={Routes.AUDIT_LOGS} className="text-sm font-medium hover:underline">
+              <Link href={Routes.AUDIT_LOGS} className="text-sm font-medium hover:underline p-2 min-h-[44px] flex items-center">
                 Audit Logs
               </Link>
             )}
-            <Link href={Routes.PROFILE} className="text-sm font-medium hover:underline">
+            <Link href={Routes.PROFILE} className="text-sm font-medium hover:underline p-2 min-h-[44px] flex items-center">
               Profile
             </Link>
-            <NotificationCenter />
-            <Button variant="ghost" size="sm" onClick={() => signOut()}>
+            <div className="hidden md:block">
+              <NotificationCenter />
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => signOut()} className="min-h-[44px]">
               Logout
             </Button>
           </>
         ) : (
-          <Link href={Routes.LOGIN} className="text-sm font-medium hover:underline">
+          <Link href={Routes.LOGIN} className="text-sm font-medium hover:underline p-2 min-h-[44px] flex items-center">
             Login
           </Link>
         )}
