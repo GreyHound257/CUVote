@@ -1,3 +1,4 @@
+import { LoadingState } from "@/components/shared/LoadingState";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { SuperAdminDashboard } from "@/components/dashboard/super-admin-dashboard";
@@ -21,9 +22,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="w-full">
-      {role === "SUPER_ADMIN" && <Suspense fallback={<div>Loading dashboard...</div>}><SuperAdminDashboard /></Suspense>}
-      {role === "DEPARTMENT_ADMIN" && <Suspense fallback={<div>Loading dashboard...</div>}><DeptAdminDashboard /></Suspense>}
-      {role === "STUDENT" && <Suspense fallback={<div>Loading dashboard...</div>}><StudentDashboard /></Suspense>}
+      {role === "SUPER_ADMIN" && <Suspense fallback={<LoadingState message="Loading dashboard..." />}><SuperAdminDashboard /></Suspense>}
+      {role === "DEPARTMENT_ADMIN" && <Suspense fallback={<LoadingState message="Loading dashboard..." />}><DeptAdminDashboard /></Suspense>}
+      {role === "STUDENT" && <Suspense fallback={<LoadingState message="Loading dashboard..." />}><StudentDashboard /></Suspense>}
     </div>
   );
 }

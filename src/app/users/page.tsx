@@ -1,5 +1,10 @@
 "use client";
 
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Loader2 } from "lucide-react";
+import { LoadingState } from "@/components/shared/LoadingState";
+
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -242,7 +247,7 @@ export default function UsersPage() {
   });
 
   if (loading) {
-    return <div className="p-8 text-center">Loading users...</div>;
+    return <LoadingState message="Loading users..." />;
   }
 
   return (
@@ -349,7 +354,9 @@ export default function UsersPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setUserToReset(null)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting}>Reset Password</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Resetting...</> : "Reset Password"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

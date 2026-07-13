@@ -1,5 +1,9 @@
 "use client";
 
+import { EmptyState } from "@/components/shared/EmptyState";
+import { LoadingState } from "@/components/shared/LoadingState";
+
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Roles } from "@/constants";
@@ -123,7 +127,7 @@ export default function AuditLogsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">Loading logs...</TableCell>
+                  <TableCell colSpan={5}><LoadingState message="Loading audit logs..." /></TableCell>
                 </TableRow>
               ) : logs.length === 0 ? (
                 <TableRow>

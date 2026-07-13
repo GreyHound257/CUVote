@@ -1,5 +1,9 @@
 "use client";
 
+import { EmptyState } from "@/components/shared/EmptyState";
+import { LoadingState } from "@/components/shared/LoadingState";
+
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -198,7 +202,7 @@ export default function DepartmentsPage() {
   });
 
   if (loading) {
-    return <div className="p-8 text-center">Loading departments...</div>;
+    return <LoadingState message="Loading departments..." />;
   }
 
   return (

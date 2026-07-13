@@ -1,4 +1,6 @@
 "use client";
+import { EmptyState } from "@/components/shared/EmptyState";
+
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -132,7 +134,7 @@ export function DeptAdminDashboard() {
                   <Badge variant="outline" className="text-yellow-600 border-yellow-600">Pending Review</Badge>
                 </div>
               ))}
-              {filteredCandidates.length === 0 && <p className="text-sm text-muted-foreground">No candidates awaiting approval.</p>}
+              {filteredCandidates.length === 0 && <EmptyState title="No candidates" description="No candidates are currently awaiting approval." />}
             </div>
           </CardContent>
         </Card>

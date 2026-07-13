@@ -1,4 +1,8 @@
 "use client";
+
+import { LoadingState } from "@/components/shared/LoadingState";
+import { EmptyState } from "@/components/shared/EmptyState";
+
 import { logger } from "@/utils/logger";
 
 import { useEffect, useState, useCallback } from "react";
@@ -106,11 +110,11 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={6}><LoadingState message="Loading candidates..." /></TableCell>
               </TableRow>
             ) : candidates.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">No candidates found.</TableCell>
+                <TableCell colSpan={6}><EmptyState title="No candidates found" description="There are no candidates matching your criteria." /></TableCell>
               </TableRow>
             ) : (
               candidates.map((c) => (

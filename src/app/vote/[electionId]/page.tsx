@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 
@@ -221,7 +221,7 @@ export default function BallotPage({ params }: { params: Promise<{ electionId: s
                 className="space-y-4"
               >
                 {currentPosition.candidates.map((candidate) => (
-                  <div key={candidate.id} className="flex items-center space-x-2 border p-4 rounded-lg">
+                  <div key={candidate.id} className={`flex items-center space-x-2 border p-4 rounded-lg transition-all ${selections[currentPosition.id] === candidate.id ? "ring-2 ring-primary border-transparent bg-primary/5" : "hover:bg-muted/50"}`}>
                     <RadioGroupItem value={candidate.id} id={candidate.id} />
                     <Label htmlFor={candidate.id} className="flex-1 cursor-pointer">
                       <div className="flex items-center gap-4">
@@ -308,7 +308,7 @@ export default function BallotPage({ params }: { params: Promise<{ electionId: s
               Back to Edit
             </Button>
             <Button onClick={submitVote} disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Confirm & Submit Vote"}
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : "Confirm & Submit Vote"}
             </Button>
           </CardFooter>
         </Card>
