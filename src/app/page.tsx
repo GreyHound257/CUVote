@@ -30,7 +30,7 @@ export default function LandingPage() {
 
       <header className="relative z-10 flex items-center justify-between border-b border-border/50 bg-background/80 px-6 py-4 backdrop-blur-md">
         <Link href={Routes.HOME} className="text-xl font-bold tracking-tight hover:text-primary transition-colors">
-          CUVote
+          <span className="text-primary">CU</span><span className="text-gold">Vote</span>
         </Link>
         <LinkButton href={Routes.LOGIN} variant="outline" size="sm">
           Sign In
@@ -47,7 +47,7 @@ export default function LandingPage() {
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
               Covenant University
               <br />
-              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary to-gold bg-clip-text text-transparent">
                 E-Voting Portal
               </span>
             </h1>

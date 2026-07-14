@@ -40,7 +40,7 @@ export const useChartColors = () => {
   const updateColors = () => {
     const newColors = [
       getComputedColor("--primary"),
-      getComputedColor("--secondary"),
+      getComputedColor("--gold"),
       getComputedColor("--accent"),
       getComputedColor("--destructive"),
       getComputedColor("--muted"),

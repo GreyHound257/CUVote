@@ -133,7 +133,9 @@ export function TopNav() {
     )}>
       <div className="flex w-full md:w-auto items-center justify-between">
         <div className="font-bold text-xl tracking-tight">
-          <Link href={Routes.HOME} className="hover:text-primary transition-colors">CUVote</Link>
+          <Link href={Routes.HOME} className="hover:text-primary transition-colors">
+            <span className="text-primary">CU</span><span className="text-gold">Vote</span>
+          </Link>
         </div>
         <div className="md:hidden flex items-center gap-2">
           <ThemeToggle />

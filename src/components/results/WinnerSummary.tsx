@@ -13,17 +13,17 @@ export function WinnerSummary({ positions }: WinnerSummaryProps) {
   if (positionsWithWinners.length === 0) return null;
 
   return (
-    <Card className="border-primary/20 bg-primary/5">
+    <Card className="border-gold/20 bg-gold/5">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Trophy className="h-5 w-5 text-yellow-600" />
+          <Trophy className="h-5 w-5 text-gold" />
           Winners Summary
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {positionsWithWinners.map((pos) => (
-            <div key={pos.id} className="rounded-lg border bg-background p-3">
+            <div key={pos.id} className="rounded-lg border border-gold/20 bg-background p-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {pos.title}
               </p>
