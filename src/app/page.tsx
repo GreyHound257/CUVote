@@ -29,7 +29,8 @@ export default function LandingPage() {
       <div className="pointer-events-none absolute -bottom-24 left-0 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
 
       <header className="relative z-10 flex items-center justify-between border-b border-border/50 bg-background/80 px-6 py-4 backdrop-blur-md">
-        <Link href={Routes.HOME} className="text-xl font-bold tracking-tight hover:text-primary transition-colors">
+        <Link href={Routes.HOME} className="text-xl font-bold tracking-tight hover:text-primary transition-colors flex items-center gap-2">
+          <img src="/favicon.ico" alt="CU Logo" className="h-6 w-6" />
           <span className="text-primary">CU</span><span className="text-gold">Vote</span>
         </Link>
         <LinkButton href={Routes.LOGIN} variant="outline" size="sm">

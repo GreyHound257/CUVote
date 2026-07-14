@@ -19,8 +19,12 @@ import { Toaster } from "sonner";
 import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
-  title: "CUVote - Secure Voting Platform",
-  description: "Covenant University Electronic Voting System",
+  title: {
+    default: "CUVote | Covenant University E-Voting",
+    template: "%s | CUVote",
+  },
+  description: "Secure, anonymous, and auditable electronic voting platform for Covenant University. Cast your vote seamlessly and track election results in real-time.",
+  themeColor: "#3A1054",
 };
 
 /** Matches next-themes storageKey default ("theme") and attribute="class". */
