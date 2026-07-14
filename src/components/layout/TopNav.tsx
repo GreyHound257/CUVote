@@ -132,10 +132,10 @@ export function TopNav() {
       "flex flex-col md:flex-row items-center justify-between p-4"
     )}>
       <div className="flex w-full md:w-auto items-center justify-between">
-        <div className="font-bold text-xl tracking-tight flex items-center gap-2">
-          <Link href={Routes.HOME} className="hover:text-primary transition-colors flex items-center gap-2">
+        <div className="font-bold tracking-tight flex items-center">
+          <Link href={Routes.HOME} className="hover:text-primary transition-colors flex items-center">
             <img src="/favicon.ico" alt="CU Logo" className="h-6 w-6" />
-            <span className="text-primary">CU</span><span className="text-gold">Vote</span>
+            <span className="text-primary text-3xl font-extrabold">CU</span><span className="text-[oklch(0.769_0.159_43)] text-3xl font-extrabold">Vote</span>
           </Link>
         </div>
         <div className="md:hidden flex items-center gap-2">
