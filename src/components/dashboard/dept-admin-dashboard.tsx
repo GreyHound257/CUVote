@@ -39,7 +39,6 @@ export function DeptAdminDashboard() {
 
   const { department, metrics, elections, activity, analytics } = data;
 
-  const COLORS = CHART_COLORS;
   const electionStatusData = Object.entries(metrics.electionsStatusSummary).map(([name, value]) => ({
     name, value
   }));

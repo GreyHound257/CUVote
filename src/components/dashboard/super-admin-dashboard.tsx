@@ -44,7 +44,6 @@ export function SuperAdminDashboard() {
     Elections: d._count.elections
   }));
 
-  const COLORS = CHART_COLORS;
   const electionStatusData = Object.entries(metrics.electionsStatusSummary).map(([name, value]) => ({
     name, value
   }));
