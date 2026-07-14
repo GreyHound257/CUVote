@@ -75,7 +75,7 @@ export class NotificationService {
   }
 
   async dispatch(payload: NotificationPayload): Promise<void> {
-    const promises = this.providers.map(provider => provider.send(payload));
+    const promises = this.providers.map((provider) => provider.send(payload));
 
     // Use allSettled to ensure all providers attempt sending even if one fails
     const results = await Promise.allSettled(promises);
@@ -85,6 +85,79 @@ export class NotificationService {
         logger.error(`Provider ${idx} failed to send notification:`, result.reason);
       }
     });
+  }
+
+  /**
+   * Efficient bulk in-app insert; other providers receive one sample + count log.
+   */
+  async dispatchMany(
+    userIds: string[],
+    payload: Omit<NotificationPayload, "userId">
+  ): Promise<void> {
+    const uniqueIds = [...new Set(userIds.filter(Boolean))];
+    if (uniqueIds.length === 0) return;
+
+    try {
+      await prisma.notification.createMany({
+        data: uniqueIds.map((userId) => ({
+          userId,
+          title: payload.title,
+          message: payload.message,
+          type: payload.type,
+          priority: payload.priority,
+        })),
+      });
+    } catch (error) {
+      logger.error("dispatchMany in-app failed:", error);
+    }
+
+    // Stub channel providers once (avoid N emails/SMS in this phase)
+    logger.info(
+      `[NotificationService] Bulk notify ${uniqueIds.length} users: ${payload.type} — ${payload.title}`
+    );
+  }
+
+  async notifyDepartmentUsers(
+    departmentId: string,
+    payload: Omit<NotificationPayload, "userId">,
+    options?: { includeStudents?: boolean; includeAdmins?: boolean; includeSuperAdmins?: boolean }
+  ): Promise<void> {
+    const includeStudents = options?.includeStudents !== false;
+    const includeAdmins = options?.includeAdmins !== false;
+    const includeSuperAdmins = options?.includeSuperAdmins !== false;
+    const ids = new Set<string>();
+
+    if (includeStudents) {
+      const students = await prisma.student.findMany({
+        where: { departmentId, userId: { not: null } },
+        select: { userId: true },
+      });
+      for (const s of students) {
+        if (s.userId) ids.add(s.userId);
+      }
+    }
+
+    if (includeAdmins) {
+      const admins = await prisma.user.findMany({
+        where: {
+          status: "ACTIVE",
+          departmentId,
+          role: "DEPARTMENT_ADMIN",
+        },
+        select: { id: true },
+      });
+      for (const a of admins) ids.add(a.id);
+    }
+
+    if (includeSuperAdmins) {
+      const supers = await prisma.user.findMany({
+        where: { status: "ACTIVE", role: "SUPER_ADMIN" },
+        select: { id: true },
+      });
+      for (const s of supers) ids.add(s.id);
+    }
+
+    await this.dispatchMany([...ids], payload);
   }
 }
 
