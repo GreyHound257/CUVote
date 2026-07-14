@@ -27,6 +27,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AppPage } from "@/components/shared/AppPage";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { SuccessState } from "@/components/shared/SuccessState";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
@@ -211,23 +212,17 @@ export default function BallotPage({ params }: { params: Promise<{ electionId: s
   if (success) {
     return (
       <AppPage maxWidth="xl">
-        <GlassCard className="space-y-4 text-center">
-          <CheckCircle2 className="mx-auto h-16 w-16 text-green-600" />
-          <h1 className="text-3xl font-bold tracking-tight">Ballot recorded</h1>
-          <p className="text-muted-foreground">
-            Thank you for voting in <span className="font-medium text-foreground">{election?.title}</span>.
-            Your choices are anonymous and permanent — they cannot be viewed or altered by anyone,
-            including administrators.
-          </p>
-          <div className="flex flex-wrap justify-center gap-2 pt-2">
-            <LinkButton href="/vote" className="rounded-full">
-              Voting dashboard
-            </LinkButton>
-            <LinkButton href="/vote/history" variant="outline" className="rounded-full">
-              Voting history
-            </LinkButton>
-          </div>
-        </GlassCard>
+        <SuccessState
+          title="Ballot recorded"
+          description={`Thank you for voting in ${election?.title}. Your choices are anonymous and permanent — they cannot be viewed or altered by anyone, including administrators.`}
+        >
+          <LinkButton href="/vote" className="rounded-full">
+            Voting dashboard
+          </LinkButton>
+          <LinkButton href="/vote/history" variant="outline" className="rounded-full">
+            Voting history
+          </LinkButton>
+        </SuccessState>
       </AppPage>
     );
   }
@@ -311,252 +306,254 @@ export default function BallotPage({ params }: { params: Promise<{ electionId: s
         </p>
       </div>
 
-      {!isReviewStep && currentPosition && (
-        <GlassCard className="space-y-4">
-          <div>
-            <h2 className="text-xl font-semibold">{currentPosition.title}</h2>
-            {currentPosition.description && (
-              <p className="mt-1 text-sm text-muted-foreground">{currentPosition.description}</p>
-            )}
-            <p className="mt-2 text-xs text-muted-foreground">
-              Choose one candidate for this position. You can change your mind until you submit.
-            </p>
-          </div>
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+        {!isReviewStep && currentPosition && (
+          <GlassCard className="space-y-4">
+            <div>
+              <h2 className="text-xl font-semibold">{currentPosition.title}</h2>
+              {currentPosition.description && (
+                <p className="mt-1 text-sm text-muted-foreground">{currentPosition.description}</p>
+              )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                Choose one candidate for this position. You can change your mind until you submit.
+              </p>
+            </div>
 
-          {currentPosition.candidates.length === 0 ? (
-            <p className="italic text-muted-foreground">
-              No approved candidates for this position — it will be skipped.
-            </p>
-          ) : (
-            <RadioGroup
-              value={selections[currentPosition.id] || ""}
-              onValueChange={(val) => {
-                if (val) handleSelection(currentPosition.id, val);
-              }}
-              className="space-y-3"
-            >
-              {currentPosition.candidates.map((candidate) => {
-                const selected = selections[currentPosition.id] === candidate.id;
-                return (
-                  <div
-                    key={candidate.id}
-                    className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${
-                      selected
-                        ? "border-transparent bg-primary/5 ring-2 ring-primary"
-                        : "border-border/50 hover:bg-muted/40"
-                    }`}
-                  >
-                    <RadioGroupItem value={candidate.id} id={candidate.id} className="mt-1" />
-                    <Label htmlFor={candidate.id} className="flex-1 cursor-pointer space-y-1">
-                      <div className="flex items-start gap-3">
-                        {candidate.photoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={candidate.photoUrl}
-                            alt=""
-                            className="h-12 w-12 shrink-0 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-lg font-bold text-secondary-foreground">
-                            {candidate.student.fullName.charAt(0)}
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-lg font-semibold">{candidate.student.fullName}</p>
-                          {candidate.slogan && (
-                            <p className="text-sm italic text-muted-foreground">
-                              &quot;{candidate.slogan}&quot;
-                            </p>
+            {currentPosition.candidates.length === 0 ? (
+              <p className="italic text-muted-foreground">
+                No approved candidates for this position — it will be skipped.
+              </p>
+            ) : (
+              <RadioGroup
+                value={selections[currentPosition.id] || ""}
+                onValueChange={(val) => {
+                  if (val) handleSelection(currentPosition.id, val);
+                }}
+                className="space-y-3"
+              >
+                {currentPosition.candidates.map((candidate) => {
+                  const selected = selections[currentPosition.id] === candidate.id;
+                  return (
+                    <div
+                      key={candidate.id}
+                      className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${
+                        selected
+                          ? "border-transparent bg-primary/5 ring-2 ring-primary"
+                          : "border-border/50 hover:bg-muted/40"
+                      }`}
+                    >
+                      <RadioGroupItem value={candidate.id} id={candidate.id} className="mt-1" />
+                      <Label htmlFor={candidate.id} className="flex-1 cursor-pointer space-y-1">
+                        <div className="flex items-start gap-3">
+                          {candidate.photoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={candidate.photoUrl}
+                              alt=""
+                              className="h-12 w-12 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-lg font-bold text-secondary-foreground">
+                              {candidate.student.fullName.charAt(0)}
+                            </div>
                           )}
-                          {candidate.visionStatement && (
-                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                              {candidate.visionStatement}
-                            </p>
-                          )}
-                          <div className="mt-2 flex flex-wrap gap-3">
-                            <Link
-                              href={`/candidates/${candidate.id}`}
-                              className="text-xs font-medium text-primary hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              Full profile
-                            </Link>
-                            {candidate.manifesto && (
-                              <Dialog>
-                                <DialogTrigger
-                                  render={
-                                    <button
-                                      type="button"
-                                      className="text-xs font-medium text-primary hover:underline"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      Read manifesto
-                                    </button>
-                                  }
-                                />
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>
-                                      {candidate.student.fullName}&apos;s manifesto
-                                    </DialogTitle>
-                                  </DialogHeader>
-                                  <div className="mt-2 max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm">
-                                    {candidate.manifesto}
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-lg font-semibold">{candidate.student.fullName}</p>
+                            {candidate.slogan && (
+                              <p className="text-sm italic text-muted-foreground">
+                                &quot;{candidate.slogan}&quot;
+                              </p>
                             )}
+                            {candidate.visionStatement && (
+                              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                                {candidate.visionStatement}
+                              </p>
+                            )}
+                            <div className="mt-2 flex flex-wrap gap-3">
+                              <Link
+                                href={`/candidates/${candidate.id}`}
+                                className="text-xs font-medium text-primary hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Full profile
+                              </Link>
+                              {candidate.manifesto && (
+                                <Dialog>
+                                  <DialogTrigger
+                                    render={
+                                      <button
+                                        type="button"
+                                        className="text-xs font-medium text-primary hover:underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        Read manifesto
+                                      </button>
+                                    }
+                                  />
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>
+                                        {candidate.student.fullName}&apos;s manifesto
+                                      </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="mt-2 max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm">
+                                      {candidate.manifesto}
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Label>
+                      </Label>
+                    </div>
+                  );
+                })}
+              </RadioGroup>
+            )}
+
+            <div className="flex justify-between gap-2 border-t border-border/50 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" /> Back
+              </Button>
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={nextStep}
+                disabled={
+                  currentPosition.candidates.length > 0 && !selections[currentPosition.id]
+                }
+              >
+                {currentStep === positions.length - 1 ? "Go to review" : "Next"}
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+          </GlassCard>
+        )}
+
+        {isReviewStep && (
+          <GlassCard className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold">Review your ballot</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Confirm each choice below. Submitting is final — your ballot cannot be changed.
+              </p>
+            </div>
+
+            <Alert className="border-amber-500/40 bg-amber-500/10 text-foreground">
+              <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+              <AlertTitle>Final submission</AlertTitle>
+              <AlertDescription>
+                Votes are anonymous and immutable. Administrators cannot see who you selected.
+              </AlertDescription>
+            </Alert>
+
+            {!allSelectionsComplete && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Incomplete ballot</AlertTitle>
+                <AlertDescription>
+                  Missing selection for:{" "}
+                  {incompletePositions.map((p) => p.title).join(", ")}. Use Change to go back.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-3">
+              {positions.map((pos, idx) => {
+                const selectedId = selections[pos.id];
+                const candidate = pos.candidates.find((c) => c.id === selectedId);
+                const skippedEmpty = pos.candidates.length === 0;
+
+                return (
+                  <div
+                    key={pos.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-background/40 px-4 py-3"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {pos.title}
+                      </p>
+                      <p className="text-lg font-medium">
+                        {skippedEmpty ? (
+                          <span className="italic text-muted-foreground">No candidates — skipped</span>
+                        ) : candidate ? (
+                          candidate.student.fullName
+                        ) : (
+                          <span className="italic text-destructive">Not selected</span>
+                        )}
+                      </p>
+                      {candidate?.slogan && (
+                        <p className="text-sm italic text-muted-foreground">
+                          &quot;{candidate.slogan}&quot;
+                        </p>
+                      )}
+                    </div>
+                    {!skippedEmpty && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={() => goToPosition(idx)}
+                      >
+                        Change
+                      </Button>
+                    )}
                   </div>
                 );
               })}
-            </RadioGroup>
-          )}
+            </div>
 
-          <div className="flex justify-between gap-2 border-t border-border/50 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-full"
-              onClick={prevStep}
-              disabled={currentStep === 0}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" /> Back
-            </Button>
-            <Button
-              type="button"
-              className="rounded-full"
-              onClick={nextStep}
-              disabled={
-                currentPosition.candidates.length > 0 && !selections[currentPosition.id]
-              }
-            >
-              {currentStep === positions.length - 1 ? "Go to review" : "Next"}
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-        </GlassCard>
-      )}
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/50 bg-background/40 p-4">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-primary"
+                checked={confirmedFinal}
+                onChange={(e) => setConfirmedFinal(e.target.checked)}
+              />
+              <span className="text-sm">
+                I have reviewed my selections and understand that submitting this ballot is{" "}
+                <strong>final and irreversible</strong>.
+              </span>
+            </label>
 
-      {isReviewStep && (
-        <GlassCard className="space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold">Review your ballot</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Confirm each choice below. Submitting is final — your ballot cannot be changed.
-            </p>
-          </div>
-
-          <Alert className="border-amber-500/40 bg-amber-500/10 text-foreground">
-            <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-            <AlertTitle>Final submission</AlertTitle>
-            <AlertDescription>
-              Votes are anonymous and immutable. Administrators cannot see who you selected.
-            </AlertDescription>
-          </Alert>
-
-          {!allSelectionsComplete && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Incomplete ballot</AlertTitle>
-              <AlertDescription>
-                Missing selection for:{" "}
-                {incompletePositions.map((p) => p.title).join(", ")}. Use Change to go back.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-3">
-            {positions.map((pos, idx) => {
-              const selectedId = selections[pos.id];
-              const candidate = pos.candidates.find((c) => c.id === selectedId);
-              const skippedEmpty = pos.candidates.length === 0;
-
-              return (
-                <div
-                  key={pos.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-background/40 px-4 py-3"
-                >
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {pos.title}
-                    </p>
-                    <p className="text-lg font-medium">
-                      {skippedEmpty ? (
-                        <span className="italic text-muted-foreground">No candidates — skipped</span>
-                      ) : candidate ? (
-                        candidate.student.fullName
-                      ) : (
-                        <span className="italic text-destructive">Not selected</span>
-                      )}
-                    </p>
-                    {candidate?.slogan && (
-                      <p className="text-sm italic text-muted-foreground">
-                        &quot;{candidate.slogan}&quot;
-                      </p>
-                    )}
-                  </div>
-                  {!skippedEmpty && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full"
-                      onClick={() => goToPosition(idx)}
-                    >
-                      Change
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/50 bg-background/40 p-4">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 accent-primary"
-              checked={confirmedFinal}
-              onChange={(e) => setConfirmedFinal(e.target.checked)}
-            />
-            <span className="text-sm">
-              I have reviewed my selections and understand that submitting this ballot is{" "}
-              <strong>final and irreversible</strong>.
-            </span>
-          </label>
-
-          <div className="flex flex-wrap justify-between gap-2 border-t border-border/50 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-full"
-              onClick={prevStep}
-              disabled={isSubmitting}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" /> Back to edit
-            </Button>
-            <Button
-              type="button"
-              className="rounded-full"
-              onClick={submitVote}
-              disabled={isSubmitting || !allSelectionsComplete || !confirmedFinal}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="mr-2 h-4 w-4" /> Confirm & submit vote
-                </>
-              )}
-            </Button>
-          </div>
-        </GlassCard>
-      )}
+            <div className="flex flex-wrap justify-between gap-2 border-t border-border/50 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={prevStep}
+                disabled={isSubmitting}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" /> Back to edit
+              </Button>
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={submitVote}
+                disabled={isSubmitting || !allSelectionsComplete || !confirmedFinal}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="mr-2 h-4 w-4" /> Confirm & submit vote
+                  </>
+                )}
+              </Button>
+            </div>
+          </GlassCard>
+        )}
+      </div>
     </AppPage>
   );
 }
