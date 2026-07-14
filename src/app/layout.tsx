@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s | CUVote",
   },
   description: "Secure, anonymous, and auditable electronic voting platform for Covenant University. Cast your vote seamlessly and track election results in real-time.",
-  themeColor: "#3A1054",
+  themeColor: "#470A34",
 };
 
 /** Matches next-themes storageKey default ("theme") and attribute="class". */
