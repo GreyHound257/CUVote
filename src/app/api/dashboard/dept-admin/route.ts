@@ -3,6 +3,39 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/utils/logger";
 
+// Helper function to get vote aggregation
+async function getVoteAggregation(departmentId?: string) {
+  const whereClause: any = {};
+  if (departmentId) {
+    whereClause.election = { departmentId };
+  }
+  
+  // Daily aggregation for last 7 days
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  whereClause.createdAt = { gte: sevenDaysAgo };
+
+  const rawData = await prisma.voteRecord.findMany({
+    where: whereClause,
+    select: { createdAt: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  // Aggregate by day
+  const dailyData: Record<string, number> = {};
+  rawData.forEach(vote => {
+    const dateStr = vote.createdAt.toISOString().split('T')[0]; // YYYY-MM-DD
+    dailyData[dateStr] = (dailyData[dateStr] || 0) + 1;
+  });
+
+  const turnoutDaily = Object.keys(dailyData).sort().map(date => ({
+    time: date,
+    votes: dailyData[date],
+  }));
+
+  return { turnoutDaily };
+}
+
 export async function GET() {
   try {
     const session = await auth();
@@ -30,7 +63,7 @@ export async function GET() {
       return NextResponse.json({ error: "Department not found" }, { status: 404 });
     }
 
-    const [candidatesAwaitingApproval, recentActivity, activeElections] = await Promise.all([
+    const [candidatesAwaitingApproval, recentActivity, activeElections, voteAggregation] = await Promise.all([
       prisma.candidate.findMany({
         where: {
           election: { departmentId },
@@ -62,6 +95,7 @@ export async function GET() {
         take: 5,
         select: { id: true, title: true, status: true, startTime: true, endTime: true, departmentId: true },
       }),
+      getVoteAggregation(departmentId),
     ]);
 
     const electionsStatusSummary = electionsCount.reduce((acc, curr) => {
@@ -79,6 +113,9 @@ export async function GET() {
       elections: {
         active: activeElections,
         awaitingApproval: candidatesAwaitingApproval,
+      },
+      analytics: {
+        turnoutDaily: voteAggregation.turnoutDaily,
       },
       activity: recentActivity,
     });

@@ -25,6 +25,15 @@ export const chartTooltipItemStyle = {
   color: "var(--muted-foreground)",
 };
 
+// Color palette using CSS variables
+export const CHART_COLORS = [
+  "var(--primary)",
+  "var(--secondary)",
+  "var(--accent)",
+  "var(--destructive)",
+  "var(--muted)",
+];
+
 export function ChartTooltipContent({
   active,
   payload,

@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { ChartTooltipContent } from "./chart-styles";
+import { ChartTooltipContent, CHART_COLORS } from "./chart-styles";
+import { TurnoutLineChart } from "./TurnoutLineChart";
 import { Users, Vote, UserCheck, Activity, Printer } from "lucide-react";
 import { SearchFilter } from "./search-filter";
 import { Button } from "@/components/ui/button";
@@ -35,9 +36,9 @@ export function DeptAdminDashboard() {
     return <div className="text-red-500 p-4">Error loading dashboard data.</div>;
   }
 
-  const { department, metrics, elections, activity } = data;
+  const { department, metrics, elections, activity, analytics } = data;
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+  const COLORS = CHART_COLORS;
   const electionStatusData = Object.entries(metrics.electionsStatusSummary).map(([name, value]) => ({
     name, value
   }));
@@ -174,6 +175,15 @@ export function DeptAdminDashboard() {
                   </div>
                ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Voter Turnover (Last 7 Days)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TurnoutLineChart data={analytics.turnoutDaily} />
           </CardContent>
         </Card>
       </div>

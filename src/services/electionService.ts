@@ -4,39 +4,72 @@ import { CreateElectionInput } from "@/validation/election";
 import { notificationService } from "@/services/notificationService";
 import { logger } from "@/utils/logger";
 
+export type GetElectionsParams = {
+  page?: number;
+  limit?: number;
+  departmentId?: string;
+  status?: string;
+  search?: string;
+};
+
 export class ElectionService {
-  static async getElections(filters: {
-    departmentId?: string;
-    status?: ElectionStatus;
-    search?: string;
-  }) {
+  static async getElections(params: GetElectionsParams) {
+    const page = params.page || 1;
+    const limit = params.limit || 10;
+    const skip = (page - 1) * limit;
+
     const where: Prisma.ElectionWhereInput = {};
 
-    if (filters.departmentId) {
-      where.departmentId = filters.departmentId;
+    if (params.departmentId) {
+      where.departmentId = params.departmentId;
     }
 
-    if (filters.status) {
-      where.status = filters.status;
+    if (params.status) {
+      // Handle status groups: UPCOMING, ACTIVE, COMPLETED
+      if (params.status === "UPCOMING") {
+        where.status = { in: ["DRAFT", "SCHEDULED", "PUBLISHED"] };
+      } else if (params.status === "ACTIVE") {
+        where.status = "VOTING_OPEN";
+      } else if (params.status === "COMPLETED") {
+        where.status = { in: ["VOTING_CLOSED", "RESULTS_GENERATED", "PUBLISHED_RESULTS", "ARCHIVED"] };
+      } else {
+        // Treat as individual status
+        where.status = params.status as ElectionStatus;
+      }
     }
 
-    if (filters.search) {
+    if (params.search) {
       where.OR = [
-        { title: { contains: filters.search, mode: "insensitive" } },
-        { description: { contains: filters.search, mode: "insensitive" } },
+        { title: { contains: params.search, mode: "insensitive" } },
+        { description: { contains: params.search, mode: "insensitive" } },
       ];
     }
 
-    return prisma.election.findMany({
-      where,
-      include: {
-        department: { select: { id: true, name: true, code: true } },
-        academicSession: { select: { id: true, name: true, isCurrent: true } },
-        positions: true,
-        _count: { select: { candidates: true, voteRecords: true } },
+    const [elections, total] = await Promise.all([
+      prisma.election.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          department: { select: { id: true, name: true, code: true } },
+          academicSession: { select: { id: true, name: true, isCurrent: true } },
+          positions: true,
+          _count: { select: { candidates: true, voteRecords: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.election.count({ where }),
+    ]);
+
+    return {
+      data: elections,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: "desc" },
-    });
+    };
   }
 
   static async getElectionById(id: string) {

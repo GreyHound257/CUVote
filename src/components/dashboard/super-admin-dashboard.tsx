@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ChartTooltipContent } from "./chart-styles";
+import { ChartTooltipContent, CHART_COLORS } from "./chart-styles";
+import { TurnoutLineChart } from "./TurnoutLineChart";
 import { Users, Building2, Vote, ShieldCheck, Activity, Printer } from "lucide-react";
 import { SearchFilter } from "./search-filter";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,7 @@ export function SuperAdminDashboard() {
     Elections: d._count.elections
   }));
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+  const COLORS = CHART_COLORS;
   const electionStatusData = Object.entries(metrics.electionsStatusSummary).map(([name, value]) => ({
     name, value
   }));
@@ -176,6 +177,15 @@ export function SuperAdminDashboard() {
                   </Badge>
                ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-7">
+          <CardHeader>
+            <CardTitle>Voter Turnover (Last 7 Days)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TurnoutLineChart data={analytics.turnoutDaily} />
           </CardContent>
         </Card>
       </div>

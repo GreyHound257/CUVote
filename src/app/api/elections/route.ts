@@ -16,10 +16,17 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
     const search = searchParams.get("search") || undefined;
-    const status = searchParams.get("status") as any;
+    const status = searchParams.get("status") || undefined;
 
-    const filters: { search?: string; status?: any; departmentId?: string } = { search, status };
+    const filters: { search?: string; status?: string; departmentId?: string; page?: number; limit?: number } = {
+      search,
+      status,
+      page,
+      limit,
+    };
 
     if (session.user.role === Role.DEPARTMENT_ADMIN) {
       if (!session.user.departmentId) {
@@ -28,8 +35,8 @@ export async function GET(req: NextRequest) {
       filters.departmentId = session.user.departmentId;
     }
 
-    const elections = await ElectionService.getElections(filters);
-    return successResponse(elections);
+    const result = await ElectionService.getElections(filters);
+    return successResponse(result);
   } catch (error) {
     logger.error("GET Elections Error:", error);
     return errorResponse("Internal server error", 500);
