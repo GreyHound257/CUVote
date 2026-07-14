@@ -54,7 +54,9 @@ export async function GET() {
       prisma.election.findMany({
         where: {
           departmentId,
-          status: { in: ["VOTING_OPEN", "PUBLISHED", "SCHEDULED"] },
+          status: {
+            in: ["VOTING_OPEN", "PUBLISHED", "SCHEDULED", "VOTING_CLOSED"],
+          },
         },
         orderBy: { startTime: "asc" },
         take: 5,

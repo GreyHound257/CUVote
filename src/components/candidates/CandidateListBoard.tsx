@@ -20,6 +20,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { CandidateStatus } from "@prisma/client";
+import { LinkButton } from "@/components/ui/link-button";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export function CandidateListBoard({ showApprovalQueue = false }: { showApprovalQueue?: boolean }) {
   interface CandidateInfo {
@@ -58,20 +61,27 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      await fetch(`/api/candidates/${id}`, {
+      const res = await fetch(`/api/candidates/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || "Failed to update status");
+        return;
+      }
+      toast.success(`Candidate ${newStatus.toLowerCase().replace("_", " ")}`);
       fetchCandidates();
     } catch (err) {
       logger.error(err instanceof Error ? err.message : String(err));
+      toast.error("Failed to update status");
     }
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4 mb-4">
+      <div className="mb-4 flex gap-4">
         <Input
           placeholder="Search by student name..."
           value={search}
@@ -104,25 +114,43 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
               <TableHead>Position</TableHead>
               <TableHead>Election</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Profile</TableHead>
               {showApprovalQueue && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6}><LoadingState message="Loading candidates..." /></TableCell>
+                <TableCell colSpan={7}>
+                  <LoadingState message="Loading candidates..." />
+                </TableCell>
               </TableRow>
             ) : candidates.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6}><EmptyState title="No candidates found" description="There are no candidates matching your criteria." /></TableCell>
+                <TableCell colSpan={7}>
+                  <EmptyState
+                    title="No candidates found"
+                    description="There are no candidates matching your criteria."
+                  />
+                </TableCell>
               </TableRow>
             ) : (
               candidates.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
                     <Avatar>
-                      {c.photoUrl && <Image src={c.photoUrl} alt={c.student?.fullName || "Candidate"} fill className="rounded-full object-cover" sizes="40px" />}
-                      <AvatarFallback>{c.student?.fullName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      {c.photoUrl && (
+                        <Image
+                          src={c.photoUrl}
+                          alt={c.student?.fullName || "Candidate"}
+                          fill
+                          className="rounded-full object-cover"
+                          sizes="40px"
+                        />
+                      )}
+                      <AvatarFallback>
+                        {c.student?.fullName?.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                   </TableCell>
                   <TableCell className="font-medium">{c.student?.fullName}</TableCell>
@@ -133,21 +161,34 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
                       {c.status.replace("_", " ")}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <LinkButton
+                      href={`/candidates/${c.id}`}
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full"
+                    >
+                      View
+                    </LinkButton>
+                  </TableCell>
                   {showApprovalQueue && (
                     <TableCell>
                       <div className="flex gap-2">
-                        <button
+                        <Button
+                          size="sm"
+                          className="rounded-full bg-green-600 text-white hover:bg-green-700"
                           onClick={() => updateStatus(c.id, "APPROVED")}
-                          className="text-sm bg-green-500 text-white px-2 py-1 rounded"
                         >
                           Approve
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="rounded-full"
                           onClick={() => updateStatus(c.id, "REJECTED")}
-                          className="text-sm bg-red-500 text-white px-2 py-1 rounded"
                         >
                           Reject
-                        </button>
+                        </Button>
                       </div>
                     </TableCell>
                   )}

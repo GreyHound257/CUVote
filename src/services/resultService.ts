@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { ElectionStatus, Role } from "@prisma/client";
 import { logAuditAction } from "@/lib/audit";
+import { SystemSettingsService } from "@/services/systemSettingsService";
+import { notificationService } from "@/services/notificationService";
+import { logger } from "@/utils/logger";
 
 const CLOSED_OR_LATER: ElectionStatus[] = [
   ElectionStatus.VOTING_CLOSED,
@@ -47,11 +50,11 @@ export class ResultService {
 
   /**
    * Who may view tallies:
-   * - Super Admin: live during voting and anytime after
+   * - Super Admin: live during voting when liveResultsEnabled is on; always after close
    * - Dept Admin: only after voting is closed
    * - Student / others: only after results are published (or archived)
    */
-  static assertCanViewResults(
+  static async assertCanViewResults(
     viewer: ResultsViewer,
     election: { status: ElectionStatus; departmentId: string }
   ) {
@@ -62,6 +65,15 @@ export class ResultService {
         throw new Error(
           "Results are only available once voting has opened. Open voting first, or wait for ballots."
         );
+      }
+
+      if (election.status === ElectionStatus.VOTING_OPEN) {
+        const liveEnabled = await SystemSettingsService.isLiveResultsEnabled();
+        if (!liveEnabled) {
+          throw new Error(
+            "Live election reports are currently disabled in System Settings."
+          );
+        }
       }
       return;
     }
@@ -75,7 +87,6 @@ export class ResultService {
       return;
     }
 
-    // Students and any other role — published only
     if (
       election.status !== ElectionStatus.PUBLISHED_RESULTS &&
       election.status !== ElectionStatus.ARCHIVED
@@ -84,7 +95,7 @@ export class ResultService {
     }
   }
 
-  static assertCanGenerate(
+  static async assertCanGenerate(
     viewer: ResultsViewer,
     election: { status: ElectionStatus; departmentId: string }
   ) {
@@ -101,10 +112,18 @@ export class ResultService {
       if (!LIVE_OR_LATER.includes(election.status)) {
         throw new Error("Cannot generate results until voting is open.");
       }
+
+      if (election.status === ElectionStatus.VOTING_OPEN) {
+        const liveEnabled = await SystemSettingsService.isLiveResultsEnabled();
+        if (!liveEnabled) {
+          throw new Error(
+            "Live election reports are currently disabled in System Settings."
+          );
+        }
+      }
       return;
     }
 
-    // Dept admin — only after close
     if (!CLOSED_OR_LATER.includes(election.status)) {
       throw new Error(
         "Department admins can generate results only after voting is closed."
@@ -135,9 +154,6 @@ export class ResultService {
     }
   }
 
-  /**
-   * Generates or updates results for an election by aggregating anonymized ballots.
-   */
   static async generateResults(electionId: string, adminId: string, viewer: ResultsViewer) {
     const election = await prisma.election.findUnique({
       where: { id: electionId },
@@ -154,7 +170,7 @@ export class ResultService {
       throw new Error("Election not found");
     }
 
-    this.assertCanGenerate(viewer, election);
+    await this.assertCanGenerate(viewer, election);
 
     const ballotCounts = await prisma.anonymizedBallot.groupBy({
       by: ["positionId", "candidateId"],
@@ -175,14 +191,10 @@ export class ResultService {
     }[] = [];
 
     for (const position of election.positions) {
-      const positionCounts = ballotCounts.filter(
-        (b) => b.positionId === position.id
-      );
+      const positionCounts = ballotCounts.filter((b) => b.positionId === position.id);
 
       const candidateResults = position.candidates.map((candidate) => {
-        const countData = positionCounts.find(
-          (pc) => pc.candidateId === candidate.id
-        );
+        const countData = positionCounts.find((pc) => pc.candidateId === candidate.id);
         return {
           candidateId: candidate.id,
           voteCount: countData ? countData._count.candidateId : 0,
@@ -222,7 +234,6 @@ export class ResultService {
         });
       }
 
-      // Official status change only after close — live generates stay on VOTING_OPEN
       if (election.status === ElectionStatus.VOTING_CLOSED) {
         await tx.election.update({
           where: { id: election.id },
@@ -256,14 +267,10 @@ export class ResultService {
     };
   }
 
-  /**
-   * Publishes the results for a given election.
-   */
   static async publishResults(electionId: string, adminId: string, viewer: ResultsViewer) {
     const election = await this.loadElectionForAccess(electionId);
     this.assertCanPublish(viewer, election);
 
-    // Ensure counts exist before publishing
     const existingCount = await prisma.electionResult.count({ where: { electionId } });
     if (existingCount === 0) {
       await this.generateResults(electionId, adminId, viewer);
@@ -292,16 +299,40 @@ export class ResultService {
       election.id
     );
 
+    try {
+      await notificationService.notifyDepartmentUsers(election.departmentId, {
+        title: "Results published",
+        message: `Results for "${election.title}" are now available.`,
+        type: "RESULTS_PUBLISHED",
+        priority: "HIGH",
+      });
+    } catch (error) {
+      logger.error("Results published notification failed:", error);
+    }
+
     return { success: true, message: "Results published successfully." };
   }
 
-  /**
-   * Retrieves results for a given election with role-based visibility.
-   */
+  static async countEligibleVoters(
+    departmentId: string,
+    eligibilityLevels: number[]
+  ): Promise<number> {
+    return prisma.student.count({
+      where: {
+        departmentId,
+        isEligible: true,
+        ...(eligibilityLevels.length > 0
+          ? { level: { in: eligibilityLevels } }
+          : {}),
+      },
+    });
+  }
+
   static async getResults(electionId: string, viewer: ResultsViewer) {
     const election = await prisma.election.findUnique({
       where: { id: electionId },
       include: {
+        department: { select: { name: true, code: true } },
         positions: {
           include: {
             candidates: {
@@ -321,14 +352,27 @@ export class ResultService {
 
     if (!election) throw new Error("Election not found");
 
-    this.assertCanViewResults(viewer, election);
+    await this.assertCanViewResults(viewer, election);
 
-    const totalTurnout = await prisma.voteRecord
-      .groupBy({
-        by: ["studentId"],
-        where: { electionId },
-      })
-      .then((res) => res.length);
+    const [totalTurnout, eligibleVoters] = await Promise.all([
+      prisma.voteRecord.count({ where: { electionId } }),
+      this.countEligibleVoters(election.departmentId, election.eligibilityLevels),
+    ]);
+
+    const turnoutRate =
+      eligibleVoters > 0
+        ? parseFloat(((totalTurnout / eligibleVoters) * 100).toFixed(2))
+        : 0;
+
+    const hasGeneratedResults = election.positions.some(
+      (pos) => pos.electionResults.length > 0
+    );
+
+    const publishedAt = election.positions
+      .flatMap((pos) => pos.electionResults)
+      .map((r) => r.publishedAt)
+      .filter((d): d is Date => d !== null)
+      .sort((a, b) => b.getTime() - a.getTime())[0];
 
     const formattedPositions = election.positions.map((pos) => {
       const positionTotalVotes = pos.electionResults.reduce(
@@ -348,19 +392,38 @@ export class ResultService {
           manifesto: candidate.manifesto,
           slogan: candidate.slogan,
           photoUrl: candidate.photoUrl,
-          voteCount: voteCount,
+          voteCount,
           percentage: parseFloat(percentage.toFixed(2)),
           isTie: result?.isTie || false,
+          isWinner: false,
         };
       });
 
       candidatesWithResults.sort((a, b) => b.voteCount - a.voteCount);
+
+      const topVoteCount = candidatesWithResults[0]?.voteCount ?? 0;
+      const winners =
+        topVoteCount > 0
+          ? candidatesWithResults
+              .filter((c) => c.voteCount === topVoteCount)
+              .map((c) => ({
+                id: c.id,
+                name: c.name,
+                isTie: c.isTie,
+              }))
+          : [];
+
+      for (const candidate of candidatesWithResults) {
+        candidate.isWinner =
+          topVoteCount > 0 && candidate.voteCount === topVoteCount;
+      }
 
       return {
         id: pos.id,
         title: pos.title,
         description: pos.description,
         totalVotes: positionTotalVotes,
+        winners,
         candidates: candidatesWithResults,
       };
     });
@@ -371,7 +434,12 @@ export class ResultService {
       id: election.id,
       title: election.title,
       status: election.status,
+      department: election.department,
       totalTurnout,
+      eligibleVoters,
+      turnoutRate,
+      hasGeneratedResults,
+      publishedAt: publishedAt?.toISOString() ?? null,
       isLive,
       positions: formattedPositions,
     };

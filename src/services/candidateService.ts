@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { CandidateStatus, ElectionStatus, Prisma } from "@prisma/client";
+import { CandidateStatus, ElectionStatus, Prisma, Role } from "@prisma/client";
+import { notificationService } from "@/services/notificationService";
 
 export class CandidateService {
   /**
@@ -10,6 +11,10 @@ export class CandidateService {
     electionId: string;
     positionId: string;
     userId: string;
+    slogan?: string;
+    manifesto?: string;
+    visionStatement?: string;
+    photoUrl?: string;
   }) {
     // Validate student and election department
     const student = await prisma.student.findUnique({
@@ -51,6 +56,10 @@ export class CandidateService {
         electionId: data.electionId,
         positionId: data.positionId,
         status: CandidateStatus.PENDING_REVIEW,
+        slogan: data.slogan?.trim() || null,
+        manifesto: data.manifesto?.trim() || null,
+        visionStatement: data.visionStatement?.trim() || null,
+        photoUrl: data.photoUrl?.trim() || null,
       },
     });
 
@@ -76,9 +85,10 @@ export class CandidateService {
     userId: string,
     updates: {
       status?: CandidateStatus;
-      manifesto?: string;
-      slogan?: string;
-      photoUrl?: string;
+      manifesto?: string | null;
+      slogan?: string | null;
+      visionStatement?: string | null;
+      photoUrl?: string | null;
     }
   ) {
     const candidate = await prisma.candidate.findUnique({ where: { id } });
@@ -86,9 +96,20 @@ export class CandidateService {
 
     const oldStatus = candidate.status;
 
+    const data: Prisma.CandidateUpdateInput = {};
+    if (updates.status !== undefined) data.status = updates.status;
+    if (updates.manifesto !== undefined) data.manifesto = updates.manifesto || null;
+    if (updates.slogan !== undefined) data.slogan = updates.slogan || null;
+    if (updates.visionStatement !== undefined) {
+      data.visionStatement = updates.visionStatement || null;
+    }
+    if (updates.photoUrl !== undefined) {
+      data.photoUrl = updates.photoUrl || null;
+    }
+
     const updated = await prisma.candidate.update({
       where: { id },
-      data: updates,
+      data,
     });
 
     // Log status change if applicable
@@ -102,10 +123,38 @@ export class CandidateService {
           details: `Candidate status changed from ${oldStatus} to ${updates.status}`,
         },
       });
+
+      if (
+        updates.status === CandidateStatus.APPROVED ||
+        updates.status === CandidateStatus.REJECTED
+      ) {
+        const withStudent = await prisma.candidate.findUnique({
+          where: { id },
+          include: {
+            student: { select: { userId: true, fullName: true } },
+            election: { select: { title: true } },
+            position: { select: { title: true } },
+          },
+        });
+
+        if (withStudent?.student.userId) {
+          const approved = updates.status === CandidateStatus.APPROVED;
+          await notificationService.dispatch({
+            userId: withStudent.student.userId,
+            title: approved ? "Nomination approved" : "Nomination rejected",
+            message: approved
+              ? `Your nomination for ${withStudent.position.title} in "${withStudent.election.title}" was approved.`
+              : `Your nomination for ${withStudent.position.title} in "${withStudent.election.title}" was not approved.`,
+            type: approved ? "CANDIDATE_APPROVED" : "CANDIDATE_REJECTED",
+            priority: "HIGH",
+          });
+        }
+      }
     }
 
     // Log detail updates if applicable
-    if (updates.manifesto || updates.slogan || updates.photoUrl) {
+    const detailKeys = ["manifesto", "slogan", "visionStatement", "photoUrl"] as const;
+    if (detailKeys.some((k) => updates[k] !== undefined)) {
       await prisma.auditLog.create({
         data: {
           userId,
@@ -118,6 +167,51 @@ export class CandidateService {
     }
 
     return updated;
+  }
+
+  /**
+   * Public/admin profile fetch.
+   * Students may only view APPROVED profiles.
+   */
+  static async getCandidateById(id: string, viewerRole?: Role | string) {
+    const candidate = await prisma.candidate.findUnique({
+      where: { id },
+      include: {
+        student: {
+          select: {
+            id: true,
+            fullName: true,
+            matricNo: true,
+            level: true,
+            departmentId: true,
+            department: { select: { id: true, name: true, code: true } },
+          },
+        },
+        election: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            departmentId: true,
+            academicSession: { select: { id: true, name: true } },
+          },
+        },
+        position: {
+          select: { id: true, title: true, description: true },
+        },
+      },
+    });
+
+    if (!candidate) throw new Error("Candidate not found");
+
+    if (
+      viewerRole === Role.STUDENT &&
+      candidate.status !== CandidateStatus.APPROVED
+    ) {
+      throw new Error("This candidate profile is not publicly available.");
+    }
+
+    return candidate;
   }
 
   /**

@@ -11,6 +11,7 @@ import { BellIcon, Menu, X } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 function NotificationCenter() {
   const [notifications, setNotifications] = React.useState<{ id: string, title: string, message: string, isRead: boolean, createdAt: string }[]>([]);
@@ -66,11 +67,16 @@ function NotificationCenter() {
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between p-4 border-b border-border/50">
           <h4 className="font-semibold text-sm">Notifications</h4>
-          {unreadCount > 0 && (
-            <Button variant="link" size="sm" onClick={() => markAsRead()} className="text-xs h-auto p-0">
-              Mark all as read
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button variant="link" size="sm" onClick={() => markAsRead()} className="text-xs h-auto p-0">
+                Mark all as read
+              </Button>
+            )}
+            <Link href={Routes.NOTIFICATIONS} className="text-xs text-primary hover:underline">
+              View all
+            </Link>
+          </div>
         </div>
         <div className="flex flex-col max-h-[300px] overflow-y-auto">
           {notifications.length === 0 ? (
@@ -130,6 +136,7 @@ export function TopNav() {
           <Link href={Routes.HOME} className="hover:text-primary transition-colors">CUVote</Link>
         </div>
         <div className="md:hidden flex items-center gap-2">
+          <ThemeToggle />
           {session?.user && <NotificationCenter />}
           <Button
             variant="ghost"
@@ -153,9 +160,14 @@ export function TopNav() {
         {session?.user ? (
           <>
             {session.user.role === Roles.SUPER_ADMIN && (
-              <NavLink href={Routes.USERS} onClick={() => setMobileMenuOpen(false)}>
-                Users
-              </NavLink>
+              <>
+                <NavLink href={Routes.USERS} onClick={() => setMobileMenuOpen(false)}>
+                  Users
+                </NavLink>
+                <NavLink href={Routes.SETTINGS} onClick={() => setMobileMenuOpen(false)}>
+                  Settings
+                </NavLink>
+              </>
             )}
             {(session.user.role === Roles.SUPER_ADMIN ||
               session.user.role === Roles.DEPARTMENT_ADMIN) && (
@@ -176,10 +188,17 @@ export function TopNav() {
                 Audit Logs
               </NavLink>
             )}
+            <NavLink href={Routes.ANNOUNCEMENTS} onClick={() => setMobileMenuOpen(false)}>
+              Announcements
+            </NavLink>
+            <NavLink href={Routes.ACTIVITY} onClick={() => setMobileMenuOpen(false)}>
+              Activity
+            </NavLink>
             <NavLink href={Routes.PROFILE} onClick={() => setMobileMenuOpen(false)}>
               Profile
             </NavLink>
-            <div className="hidden md:block">
+            <div className="hidden md:flex md:items-center md:gap-1">
+              <ThemeToggle />
               <NotificationCenter />
             </div>
             <Button
@@ -192,9 +211,12 @@ export function TopNav() {
             </Button>
           </>
         ) : (
-          <NavLink href={Routes.LOGIN} onClick={() => setMobileMenuOpen(false)}>
-            Login
-          </NavLink>
+          <>
+            <ThemeToggle />
+            <NavLink href={Routes.LOGIN} onClick={() => setMobileMenuOpen(false)}>
+              Login
+            </NavLink>
+          </>
         )}
       </nav>
     </header>

@@ -23,6 +23,24 @@ export const metadata: Metadata = {
   description: "Covenant University Electronic Voting System",
 };
 
+/** Matches next-themes storageKey default ("theme") and attribute="class". */
+const themeInitScript = `
+(function() {
+  try {
+    var storageKey = 'theme';
+    var theme = localStorage.getItem(storageKey);
+    var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var resolved = theme === 'dark' || theme === 'light'
+      ? theme
+      : (systemDark ? 'dark' : 'light');
+    var root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(resolved);
+    root.style.colorScheme = resolved;
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,6 +52,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-full flex flex-col bg-background">
         <SessionProvider>
           <ThemeProvider

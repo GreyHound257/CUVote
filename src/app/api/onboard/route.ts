@@ -5,10 +5,14 @@ import { onboardSchema } from "@/validation/onboard";
 import { successResponse, errorResponse } from "@/utils/api";
 import bcrypt from "bcryptjs";
 import { logAuditAction } from "@/lib/audit";
+import { enforceRateLimit, parseJsonBody, RequestBodyError } from "@/lib/request";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const limited = enforceRateLimit(req, "AUTH_SENSITIVE");
+    if (limited) return limited;
+
+    const body = await parseJsonBody(req);
     const parsed = onboardSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -49,6 +53,9 @@ export async function POST(req: NextRequest) {
 
     return successResponse({ message: "Password set successfully" }, 200);
   } catch (error: unknown) {
+    if (error instanceof RequestBodyError) {
+      return errorResponse(error.message, 413);
+    }
     logger.error("Onboard Error:", error);
     return errorResponse("Internal server error", 500);
   }

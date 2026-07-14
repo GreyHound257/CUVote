@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 function isBareLayout(pathname: string) {
   if (pathname === "/") return true;
-  return ["/login", "/setup", "/onboarding"].some(
+  return ["/login", "/setup", "/onboarding", "/forgot-password", "/reset-password"].some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 }

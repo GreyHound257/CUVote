@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { ElectionStatus, Prisma, Role } from "@prisma/client";
 import { CreateElectionInput } from "@/validation/election";
+import { notificationService } from "@/services/notificationService";
+import { logger } from "@/utils/logger";
 
 export class ElectionService {
   static async getElections(filters: {
@@ -29,6 +31,7 @@ export class ElectionService {
       where,
       include: {
         department: { select: { id: true, name: true, code: true } },
+        academicSession: { select: { id: true, name: true, isCurrent: true } },
         positions: true,
         _count: { select: { candidates: true, voteRecords: true } },
       },
@@ -41,6 +44,7 @@ export class ElectionService {
       where: { id },
       include: {
         department: { select: { id: true, name: true, code: true } },
+        academicSession: { select: { id: true, name: true, isCurrent: true } },
         positions: {
           include: {
             candidates: {
@@ -77,6 +81,19 @@ export class ElectionService {
       throw new Error("Cannot create an election for a deleted department.");
     }
 
+    const academicSession = await prisma.academicSession.findUnique({
+      where: { id: data.academicSessionId },
+      select: { id: true, status: true, name: true },
+    });
+
+    if (!academicSession) {
+      throw new Error("Selected academic session does not exist.");
+    }
+
+    if (academicSession.status !== "ACTIVE") {
+      throw new Error("Cannot create an election for an archived academic session.");
+    }
+
     // Use nested create instead of interactive $transaction — Neon pooler
     // (PgBouncer) often fails interactive txs with P2028 under contention.
     const election = await prisma.election.create({
@@ -84,6 +101,8 @@ export class ElectionService {
         title: data.title,
         description: data.description,
         departmentId: data.departmentId,
+        academicSessionId: data.academicSessionId,
+        eligibilityLevels: data.eligibilityLevels ?? [],
         startTime,
         endTime,
         status: ElectionStatus.DRAFT,
@@ -98,9 +117,23 @@ export class ElectionService {
       },
       include: {
         department: { select: { id: true, name: true, code: true } },
+        academicSession: { select: { id: true, name: true, isCurrent: true } },
         positions: true,
       },
     });
+
+    if (data.saveAsTemplateName) {
+      await prisma.electionTemplate.create({
+        data: {
+          name: data.saveAsTemplateName,
+          description: data.description,
+          departmentId: data.departmentId,
+          createdById: userId,
+          eligibilityLevels: data.eligibilityLevels ?? [],
+          positionsJson: data.positions,
+        },
+      });
+    }
 
     await prisma.auditLog.create({
       data: {
@@ -108,11 +141,52 @@ export class ElectionService {
         action: "ELECTION_CREATED",
         entity: "Election",
         entityId: election.id,
-        details: `Created election "${election.title}" with ${data.positions.length} position(s)`,
+        details: `Created election "${election.title}" for session ${academicSession.name} with ${data.positions.length} position(s)`,
       },
     });
 
     return election;
+  }
+
+  /**
+   * Ballot preview for admins — same shape as student ballot, no vote eligibility checks.
+   */
+  static async getBallotPreview(electionId: string) {
+    const election = await prisma.election.findUnique({
+      where: { id: electionId },
+      include: {
+        department: { select: { id: true, name: true, code: true } },
+        academicSession: { select: { id: true, name: true } },
+        positions: {
+          include: {
+            candidates: {
+              where: { status: "APPROVED" },
+              include: {
+                student: { select: { fullName: true, matricNo: true, level: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!election) throw new Error("Election not found");
+
+    return {
+      election: {
+        id: election.id,
+        title: election.title,
+        description: election.description,
+        status: election.status,
+        department: election.department,
+        academicSession: election.academicSession,
+        eligibilityLevels: election.eligibilityLevels,
+      },
+      positions: election.positions.map((p) => ({
+        ...p,
+        hasVoted: false,
+      })),
+    };
   }
 
   static async updateElectionStatus(
@@ -148,7 +222,70 @@ export class ElectionService {
       },
     });
 
+    try {
+      await this.notifyStatusChange(updated);
+    } catch (error) {
+      logger.error("Election status notification failed:", error);
+    }
+
     return updated;
+  }
+
+  private static async notifyStatusChange(election: {
+    id: string;
+    title: string;
+    status: ElectionStatus;
+    departmentId: string;
+  }) {
+    const deptId = election.departmentId;
+    const title = election.title;
+
+    if (election.status === ElectionStatus.PUBLISHED) {
+      await notificationService.notifyDepartmentUsers(deptId, {
+        title: "Election published",
+        message: `"${title}" is now published. Check the elections portal for details and dates.`,
+        type: "ELECTION_PUBLISHED",
+        priority: "MEDIUM",
+      });
+      return;
+    }
+
+    if (election.status === ElectionStatus.VOTING_OPEN) {
+      await notificationService.notifyDepartmentUsers(
+        deptId,
+        {
+          title: "Voting is open",
+          message: `Voting has opened for "${title}". Cast your ballot before the deadline.`,
+          type: "VOTING_OPEN",
+          priority: "HIGH",
+        },
+        { includeStudents: true, includeAdmins: true }
+      );
+      return;
+    }
+
+    if (election.status === ElectionStatus.VOTING_CLOSED) {
+      await notificationService.notifyDepartmentUsers(
+        deptId,
+        {
+          title: "Voting closed",
+          message: `Voting for "${title}" has closed. Results will be published by election officials.`,
+          type: "VOTING_CLOSED",
+          priority: "MEDIUM",
+        },
+        { includeStudents: true, includeAdmins: true }
+      );
+      return;
+    }
+
+    if (election.status === ElectionStatus.PUBLISHED_RESULTS) {
+      await notificationService.notifyDepartmentUsers(deptId, {
+        title: "Results published",
+        message: `Results for "${title}" are now available.`,
+        type: "RESULTS_PUBLISHED",
+        priority: "HIGH",
+      });
+    }
   }
 
   static assertCanManage(

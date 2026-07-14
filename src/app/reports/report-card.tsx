@@ -6,7 +6,15 @@ import { FileDown, Download } from "lucide-react";
 import { SearchFilter } from "@/components/dashboard/search-filter";
 import { useState } from "react";
 
-export function ReportCard({ report }: { report: any }) {
+type ReportDefinition = {
+  id: string;
+  title: string;
+  description: string;
+  filterOptions?: { label: string; value: string }[];
+  placeholder?: string;
+};
+
+export function ReportCard({ report }: { report: ReportDefinition }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
@@ -15,10 +23,12 @@ export function ReportCard({ report }: { report: any }) {
     if (filterType === "status") setStatusFilter(value);
   };
 
-  const exportUrl = `/api/reports/export?type=${report.id}${searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : ''}${statusFilter ? `&status=${encodeURIComponent(statusFilter)}` : ''}`;
+  const exportUrl = `/api/reports/export?type=${report.id}${
+    searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : ""
+  }${statusFilter ? `&status=${encodeURIComponent(statusFilter)}` : ""}`;
 
   return (
-    <Card>
+    <Card className="border-border/50">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileDown className="h-5 w-5" />
@@ -27,18 +37,20 @@ export function ReportCard({ report }: { report: any }) {
         <CardDescription>{report.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {report.id !== "audit" && (
+        {report.id !== "audit" && report.filterOptions && (
           <SearchFilter
             onSearch={handleSearch}
             onFilterChange={handleFilterChange}
-            placeholder={`Search ${report.id}...`}
-            filterOptions={[
-                { label: "Active", value: "ACTIVE" },
-                { label: "Inactive/Closed", value: "INACTIVE" }
-            ]}
+            placeholder={report.placeholder ?? `Search ${report.id}…`}
+            filterOptions={report.filterOptions}
           />
         )}
-        <LinkButton href={exportUrl} target="_blank" className="w-full rounded-full" linkClassName="flex items-center justify-center">
+        <LinkButton
+          href={exportUrl}
+          target="_blank"
+          className="w-full rounded-full"
+          linkClassName="flex items-center justify-center"
+        >
           <Download className="mr-2 h-4 w-4" /> Download CSV
         </LinkButton>
       </CardContent>

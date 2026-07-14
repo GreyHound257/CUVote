@@ -36,7 +36,8 @@ export async function GET(
       message.includes("not yet published") ||
       message.includes("only after") ||
       message.includes("Forbidden") ||
-      message.includes("only available")
+      message.includes("only available") ||
+      message.includes("currently disabled")
     ) {
       return NextResponse.json({ success: false, error: message }, { status: 403 });
     }

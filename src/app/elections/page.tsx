@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Vote, Play, Square, Send, BarChart3 } from "lucide-react";
+import { Vote, Play, Square, Send, BarChart3, Eye, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useSession } from "next-auth/react";
@@ -31,6 +31,7 @@ interface Election {
   startTime: string | null;
   endTime: string | null;
   department: { name: string; code: string };
+  academicSession?: { id: string; name: string; isCurrent: boolean } | null;
   positions: { id: string; title: string }[];
   _count: { candidates: number; voteRecords: number };
 }
@@ -59,10 +60,14 @@ export default function ElectionsPage() {
   const role = session?.user?.role;
   const [elections, setElections] = useState<Election[]>([]);
   const [loading, setLoading] = useState(true);
+  const [liveResultsEnabled, setLiveResultsEnabled] = useState(true);
 
   const canOpenResults = (status: string) => {
     if (role === Roles.SUPER_ADMIN) {
-      return [...LIVE_RESULTS_STATUSES, ...CLOSED_RESULTS_STATUSES].includes(status);
+      if (LIVE_RESULTS_STATUSES.includes(status)) {
+        return liveResultsEnabled;
+      }
+      return CLOSED_RESULTS_STATUSES.includes(status);
     }
     if (role === Roles.DEPARTMENT_ADMIN) {
       return CLOSED_RESULTS_STATUSES.includes(status);
@@ -98,6 +103,19 @@ export default function ElectionsPage() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (role === Roles.SUPER_ADMIN || role === Roles.DEPARTMENT_ADMIN) {
+      fetch("/api/settings")
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success) setLiveResultsEnabled(!!json.data.liveResultsEnabled);
+        })
+        .catch(() => {
+          /* default remains true */
+        });
+    }
+  }, [role]);
 
   useEffect(() => {
     fetchElections();
@@ -153,6 +171,7 @@ export default function ElectionsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
+                <TableHead>Session</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Positions</TableHead>
@@ -165,6 +184,9 @@ export default function ElectionsPage() {
               {elections.map((election) => (
                 <TableRow key={election.id}>
                   <TableCell className="font-medium">{election.title}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {election.academicSession?.name ?? "—"}
+                  </TableCell>
                   <TableCell>{election.department.code}</TableCell>
                   <TableCell>
                     <Badge variant={(statusColors[election.status] as any) || "secondary"}>
@@ -183,6 +205,14 @@ export default function ElectionsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex flex-wrap justify-end gap-1">
+                      <LinkButton
+                        href={`/elections/${election.id}/preview`}
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-full"
+                      >
+                        <Eye className="mr-1 h-3 w-3" /> Preview
+                      </LinkButton>
                       {election.status === "DRAFT" && (
                         <Button
                           size="sm"
@@ -208,6 +238,15 @@ export default function ElectionsPage() {
                           onClick={() => updateStatus(election.id, "VOTING_CLOSED")}
                         >
                           <Square className="mr-1 h-3 w-3" /> Close
+                        </Button>
+                      )}
+                      {["PUBLISHED_RESULTS", "RESULTS_GENERATED"].includes(election.status) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateStatus(election.id, "ARCHIVED")}
+                        >
+                          <Archive className="mr-1 h-3 w-3" /> Archive
                         </Button>
                       )}
                       {canOpenResults(election.status) && (

@@ -8,6 +8,8 @@ export const Routes = {
   HOME: "/",
   LOGIN: "/login",
   ONBOARDING: "/onboarding",
+  FORGOT_PASSWORD: "/forgot-password",
+  RESET_PASSWORD: "/reset-password",
   DASHBOARD: "/dashboard",
   DEPARTMENTS: "/departments",
   ELECTIONS: "/elections",
@@ -15,6 +17,7 @@ export const Routes = {
   USERS: "/users",
   CANDIDATES: "/candidates",
   CANDIDATE_APPROVALS: "/candidates/approvals",
+  candidateProfile: (id: string) => `/candidates/${id}` as const,
   VOTING: "/vote",
   RESULTS: "/results",
   REPORTS: "/reports",
@@ -22,4 +25,6 @@ export const Routes = {
   AUDIT_LOGS: "/audit-logs",
   PROFILE: "/profile",
   SETTINGS: "/settings",
+  ANNOUNCEMENTS: "/announcements",
+  ACTIVITY: "/activity",
 };

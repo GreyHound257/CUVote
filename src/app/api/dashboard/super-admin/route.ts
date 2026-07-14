@@ -37,7 +37,7 @@ export async function GET() {
       prisma.candidate.count(),
       prisma.voteRecord.count(),
       prisma.election.count({
-        where: { status: { in: ["VOTING_OPEN", "PUBLISHED", "SCHEDULED"] } },
+        where: { status: { in: ["VOTING_OPEN", "PUBLISHED", "SCHEDULED", "VOTING_CLOSED"] } },
       }),
       prisma.user.findMany({
         where: { lastLogin: { not: null } },

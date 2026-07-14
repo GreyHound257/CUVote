@@ -8,32 +8,18 @@ import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/link-button";
 import { Roles } from "@/constants";
 import { AppPage } from "@/components/shared/AppPage";
 import { PageHeader } from "@/components/shared/PageHeader";
-
-type ResultsData = {
-  id: string;
-  title: string;
-  status: string;
-  totalTurnout: number;
-  isLive?: boolean;
-  positions: {
-    id: string;
-    title: string;
-    totalVotes: number;
-    candidates: {
-      id: string;
-      name: string;
-      voteCount: number;
-      percentage: number;
-      isTie: boolean;
-    }[];
-  }[];
-};
+import { ResultsSummaryCards } from "@/components/results/ResultsSummaryCards";
+import { PositionResultsChart } from "@/components/results/PositionResultsChart";
+import { PositionResultsList } from "@/components/results/PositionResultsList";
+import { WinnerSummary } from "@/components/results/WinnerSummary";
+import type { ElectionResultsPayload } from "@/types/results";
+import { format } from "date-fns";
+import { AlertCircle } from "lucide-react";
 
 export default function AdminResultsManager({ params }: { params: Promise<{ id: string }> }) {
   const { id: electionId } = use(params);
@@ -42,7 +28,7 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
   const role = session?.user?.role;
   const isSuperAdmin = role === Roles.SUPER_ADMIN;
 
-  const [data, setData] = useState<ResultsData | null>(null);
+  const [data, setData] = useState<ElectionResultsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -154,6 +140,7 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
     data.status === "VOTING_CLOSED" || data.status === "RESULTS_GENERATED";
   const alreadyPublished =
     data.status === "PUBLISHED_RESULTS" || data.status === "ARCHIVED";
+  const winnerCount = data.positions.reduce((sum, pos) => sum + pos.winners.length, 0);
 
   return (
     <AppPage>
@@ -162,7 +149,7 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
         description={
           isLive
             ? "Super Admin live tallies while voting is open. Department admins see results only after voting is closed."
-            : data.title
+            : `${data.title} · ${data.department.code}`
         }
         action={
           <div className="flex flex-wrap gap-2">
@@ -193,6 +180,9 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
             >
               Export CSV
             </Button>
+            <LinkButton href={`/elections/${electionId}/results`} variant="outline" className="rounded-full">
+              Public View
+            </LinkButton>
             <LinkButton href="/elections" variant="ghost" className="rounded-full">
               Elections
             </LinkButton>
@@ -200,36 +190,49 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
         }
       />
 
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        <h2 className="text-lg font-semibold">{data.title}</h2>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         {isLive && (
-          <Badge className="bg-amber-600 hover:bg-amber-700 text-white border-0">
+          <Badge className="border-0 bg-amber-600 text-white hover:bg-amber-700">
             Live — Super Admin only
           </Badge>
         )}
         {alreadyPublished && <Badge variant="default">Published</Badge>}
+        {data.publishedAt && (
+          <span className="text-sm text-muted-foreground">
+            Published {format(new Date(data.publishedAt), "MMM d, yyyy 'at' HH:mm")}
+          </span>
+        )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.status.replace(/_/g, " ")}</div>
+      {!data.hasGeneratedResults && (
+        <Card className="mb-4 border-amber-500/30 bg-amber-500/5">
+          <CardContent className="flex items-start gap-3 pt-6">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div>
+              <p className="font-medium">No tallies generated yet</p>
+              <p className="text-sm text-muted-foreground">
+                {isLive
+                  ? "Click Refresh Live Tallies to compile current ballot counts."
+                  : "Generate results from submitted ballots before publishing to students."}
+              </p>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Turnout</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.totalTurnout}</div>
-          </CardContent>
-        </Card>
-      </div>
+      )}
 
-      <div className="space-y-6">
+      <ResultsSummaryCards
+        totalTurnout={data.totalTurnout}
+        eligibleVoters={data.eligibleVoters}
+        turnoutRate={data.turnoutRate}
+        positionCount={data.positions.length}
+        winnerCount={winnerCount}
+        status={data.status}
+        isLive={isLive}
+      />
+
+      {data.hasGeneratedResults && <WinnerSummary positions={data.positions} />}
+
+      <div className="mt-6 space-y-6">
         {data.positions.map((pos) => (
           <Card key={pos.id}>
             <CardHeader>
@@ -237,24 +240,15 @@ export default function AdminResultsManager({ params }: { params: Promise<{ id: 
               <p className="text-sm text-muted-foreground">Total Votes: {pos.totalVotes}</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {pos.candidates.map((cand) => (
-                <div key={cand.id} className="space-y-1 rounded-md border p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 font-medium">
-                      {cand.name}
-                      {cand.isTie && <Badge variant="secondary">Tie</Badge>}
-                    </div>
-                    <div className="text-sm font-semibold text-muted-foreground">
-                      {cand.voteCount} votes ({cand.percentage}%)
-                    </div>
-                  </div>
-                  <Progress value={cand.percentage} className="h-2" />
-                </div>
-              ))}
-              {pos.candidates.length === 0 && (
+              {data.hasGeneratedResults ? (
+                <>
+                  <PositionResultsChart candidates={pos.candidates} />
+                  <PositionResultsList candidates={pos.candidates} variant="compact" />
+                </>
+              ) : (
                 <EmptyState
-                  title="No candidates or votes"
-                  description="Generate tallies after votes have been cast."
+                  title="No tallies yet"
+                  description="Generate or refresh results to see vote counts for this position."
                 />
               )}
             </CardContent>

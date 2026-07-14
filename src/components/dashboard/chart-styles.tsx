@@ -1,4 +1,13 @@
-import type { TooltipProps } from "recharts";
+type ChartTooltipPayload = {
+  name?: string;
+  value?: number | string;
+};
+
+type ChartTooltipContentProps = {
+  active?: boolean;
+  payload?: ChartTooltipPayload[];
+  label?: string | number;
+};
 
 export const chartTooltipContentStyle = {
   backgroundColor: "var(--background)",
@@ -20,7 +29,7 @@ export function ChartTooltipContent({
   active,
   payload,
   label,
-}: TooltipProps<number, string>) {
+}: ChartTooltipContentProps) {
   if (!active || !payload?.length) return null;
 
   return (

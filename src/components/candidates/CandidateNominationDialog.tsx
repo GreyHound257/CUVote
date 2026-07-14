@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Election {
   id: string;
@@ -46,6 +48,10 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
   const [electionId, setElectionId] = useState<string | null>(null);
   const [positionId, setPositionId] = useState<string | null>(null);
   const [studentId, setStudentId] = useState<string | null>(null);
+  const [slogan, setSlogan] = useState("");
+  const [visionStatement, setVisionStatement] = useState("");
+  const [manifesto, setManifesto] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
 
   const selectedElection = useMemo(
     () => elections.find((e) => e.id === electionId) ?? null,
@@ -132,6 +138,10 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
     setElectionId(null);
     setPositionId(null);
     setStudentId(null);
+    setSlogan("");
+    setVisionStatement("");
+    setManifesto("");
+    setPhotoUrl("");
   };
 
   const handleSubmit = async () => {
@@ -145,7 +155,15 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
       const res = await fetch("/api/candidates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ electionId, positionId, studentId }),
+        body: JSON.stringify({
+          electionId,
+          positionId,
+          studentId,
+          slogan: slogan.trim() || undefined,
+          visionStatement: visionStatement.trim() || undefined,
+          manifesto: manifesto.trim() || undefined,
+          photoUrl: photoUrl.trim() || undefined,
+        }),
       });
       const json = await res.json();
 
@@ -177,11 +195,11 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
         <UserPlus className="mr-2 h-4 w-4" /> Nominate Candidate
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Nominate Candidate</DialogTitle>
           <DialogDescription>
-            Assign a student to contest a position in an election.
+            Assign a student to a position. You can add slogan, vision, and manifesto now or later on their profile.
           </DialogDescription>
         </DialogHeader>
 
@@ -288,6 +306,43 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
                   Showing {eligibleStudents.length} student(s) from the election&apos;s department
                 </p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Campaign slogan (optional)</Label>
+              <Input
+                value={slogan}
+                onChange={(e) => setSlogan(e.target.value)}
+                placeholder="Short slogan"
+                className="rounded-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Vision statement (optional)</Label>
+              <Textarea
+                value={visionStatement}
+                onChange={(e) => setVisionStatement(e.target.value)}
+                placeholder="Candidate vision"
+                rows={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Manifesto (optional)</Label>
+              <Textarea
+                value={manifesto}
+                onChange={(e) => setManifesto(e.target.value)}
+                placeholder="Campaign manifesto"
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Photo URL (optional)</Label>
+              <Input
+                value={photoUrl}
+                onChange={(e) => setPhotoUrl(e.target.value)}
+                placeholder="https://…"
+                className="rounded-full"
+              />
             </div>
           </div>
         )}

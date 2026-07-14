@@ -6,9 +6,13 @@ import { successResponse, errorResponse } from "@/utils/api";
 import bcrypt from "bcryptjs";
 import { logAuditAction } from "@/lib/audit";
 import { Role } from "@prisma/client";
+import { enforceRateLimit, parseJsonBody, RequestBodyError } from "@/lib/request";
 
 export async function POST(req: NextRequest) {
   try {
+    const limited = enforceRateLimit(req, "SETUP");
+    if (limited) return limited;
+
     // Check if a super admin already exists
     const superAdminExists = await prisma.user.findFirst({
       where: { role: Role.SUPER_ADMIN },
@@ -18,7 +22,7 @@ export async function POST(req: NextRequest) {
       return errorResponse("Setup wizard is locked. A Super Administrator already exists.", 403);
     }
 
-    const body = await req.json();
+    const body = await parseJsonBody(req);
     const parsed = setupWizardSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -48,6 +52,9 @@ export async function POST(req: NextRequest) {
 
     return successResponse({ message: "Super Administrator created successfully" }, 201);
   } catch (error: unknown) {
+    if (error instanceof RequestBodyError) {
+      return errorResponse(error.message, 413);
+    }
     logger.error("Setup Wizard Error:", error);
     return errorResponse("Internal server error", 500);
   }

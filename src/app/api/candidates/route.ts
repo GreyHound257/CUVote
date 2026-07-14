@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { CandidateService } from "@/services/candidateService";
 import { CandidateStatus, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { nominateCandidateSchema } from "@/validation/candidate";
 
 export async function GET(req: Request) {
   try {
@@ -80,21 +81,22 @@ export async function POST(req: Request) {
     }
 
     const data = await req.json();
-
-    if (!data.studentId || !data.electionId || !data.positionId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const parsed = nominateCandidateSchema.safeParse(data);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
     // Authorization: Dept Admin must own the election
     if (session.user.role === Role.DEPARTMENT_ADMIN) {
-      const election = await prisma.election.findUnique({ where: { id: data.electionId } });
+      const election = await prisma.election.findUnique({ where: { id: parsed.data.electionId } });
       if (election?.departmentId !== session.user.departmentId) {
         return NextResponse.json({ error: "Forbidden: Cannot manage candidates for this election" }, { status: 403 });
       }
     }
 
     const candidate = await CandidateService.createCandidate({
-      ...data,
+      ...parsed.data,
+      photoUrl: parsed.data.photoUrl || undefined,
       userId: session.user.id,
     });
 

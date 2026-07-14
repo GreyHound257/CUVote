@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/utils/logger";
+import { isLevelEligible } from "@/lib/electionEligibility";
 
 export async function GET(request: Request) {
   try {
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
     }
 
     const [
-      eligibleElections,
+      openElections,
       upcomingElections,
       votingHistory,
       publishedResults
@@ -33,7 +34,15 @@ export async function GET(request: Request) {
           status: "VOTING_OPEN"
         },
         orderBy: { endTime: 'asc' },
-        select: { id: true, title: true, status: true, startTime: true, endTime: true, departmentId: true }
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          startTime: true,
+          endTime: true,
+          departmentId: true,
+          eligibilityLevels: true,
+        }
       }),
       prisma.election.findMany({
         where: {
@@ -41,7 +50,15 @@ export async function GET(request: Request) {
           status: { in: ["SCHEDULED", "PUBLISHED"] }
         },
         orderBy: { startTime: 'asc' },
-        select: { id: true, title: true, status: true, startTime: true, endTime: true, departmentId: true }
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          startTime: true,
+          endTime: true,
+          departmentId: true,
+          eligibilityLevels: true,
+        }
       }),
       prisma.voteRecord.findMany({
         where: { studentId: student.id },
@@ -61,6 +78,14 @@ export async function GET(request: Request) {
         select: { id: true, title: true, status: true, startTime: true, endTime: true, departmentId: true }
       })
     ]);
+
+    const eligibleElections = openElections.filter((e) =>
+      isLevelEligible(e.eligibilityLevels, student.level)
+    );
+
+    const upcomingForLevel = upcomingElections.filter((e) =>
+      isLevelEligible(e.eligibilityLevels, student.level)
+    );
 
     // Determine voting status for eligible elections
     const eligibleElectionsWithStatus = await Promise.all(
@@ -90,7 +115,7 @@ export async function GET(request: Request) {
       },
       elections: {
         eligible: eligibleElectionsWithStatus,
-        upcoming: upcomingElections,
+        upcoming: upcomingForLevel,
         publishedResults
       },
       history: votingHistory

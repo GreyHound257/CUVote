@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ResultService } from '../src/services/resultService';
 import { prisma } from '../src/lib/prisma';
 import { logAuditAction } from '../src/lib/audit';
-import { ElectionStatus } from '@prisma/client';
+import { ElectionStatus, Role } from '@prisma/client';
 
 vi.mock('../src/lib/prisma', () => ({
   prisma: {
@@ -17,6 +17,12 @@ vi.mock('../src/lib/prisma', () => ({
       deleteMany: vi.fn(),
       createMany: vi.fn(),
     },
+    student: {
+      count: vi.fn(),
+    },
+    voteRecord: {
+      count: vi.fn(),
+    },
     $transaction: vi.fn((callback) => callback(prisma)),
   },
 }));
@@ -28,6 +34,35 @@ vi.mock('../src/lib/audit', () => ({
 describe('ResultService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('assertCanViewResults', () => {
+    it('blocks students before results are published', async () => {
+      await expect(
+        ResultService.assertCanViewResults(
+          { role: Role.STUDENT },
+          { status: ElectionStatus.VOTING_CLOSED, departmentId: 'd1' }
+        )
+      ).rejects.toThrow('not yet published');
+    });
+
+    it('allows students to view published results', async () => {
+      await expect(
+        ResultService.assertCanViewResults(
+          { role: Role.STUDENT },
+          { status: ElectionStatus.PUBLISHED_RESULTS, departmentId: 'd1' }
+        )
+      ).resolves.toBeUndefined();
+    });
+
+    it('blocks department admins before voting closes', async () => {
+      await expect(
+        ResultService.assertCanViewResults(
+          { role: Role.DEPARTMENT_ADMIN, departmentId: 'd1' },
+          { status: ElectionStatus.VOTING_OPEN, departmentId: 'd1' }
+        )
+      ).rejects.toThrow('only after voting is closed');
+    });
   });
 
   describe('generateResults', () => {
