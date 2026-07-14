@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { LinkButton } from "@/components/ui/link-button";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { DataTableToolbar } from "@/components/shared/DataTableToolbar";
 import { DataTablePagination } from "@/components/shared/DataTablePagination";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +63,7 @@ export default function ElectionsPage() {
   const role = session?.user?.role;
   const [elections, setElections] = useState<Election[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [liveResultsEnabled, setLiveResultsEnabled] = useState(true);
   
   // Pagination and filters
@@ -97,6 +99,7 @@ export default function ElectionsPage() {
 
   const fetchElections = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -111,10 +114,14 @@ export default function ElectionsPage() {
         setElections(json.data.data);
         setTotalPages(json.data.meta.totalPages);
       } else {
-        toast.error(json.error || "Failed to load elections");
+        const errorMsg = json.error || "Failed to load elections";
+        setError(errorMsg);
+        toast.error(errorMsg);
       }
-    } catch {
-      toast.error("Failed to load elections");
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to load elections";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -189,7 +196,13 @@ export default function ElectionsPage() {
         </Select>
       </DataTableToolbar>
 
-      {loading ? (
+      {error ? (
+        <ErrorState
+          title="Failed to load elections"
+          message={error}
+          onRetry={fetchElections}
+        />
+      ) : loading ? (
         <LoadingState message="Loading elections..." />
       ) : elections.length === 0 ? (
         <EmptyState

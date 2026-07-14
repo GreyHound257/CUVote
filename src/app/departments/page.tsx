@@ -2,6 +2,7 @@
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { DataTableToolbar } from "@/components/shared/DataTableToolbar";
 import { DataTablePagination } from "@/components/shared/DataTablePagination";
 
@@ -50,6 +51,7 @@ export default function DepartmentsPage() {
   const router = useRouter();
   const [data, setData] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -58,16 +60,22 @@ export default function DepartmentsPage() {
   }, []);
 
   const fetchDepartments = async () => {
+    setError(null);
+    setLoading(true);
     try {
       const res = await fetch("/api/departments");
       const json = await res.json();
       if (json.success) {
         setData(json.data);
       } else {
-        toast.error("Failed to fetch departments: " + json.error);
+        const errorMsg = "Failed to fetch departments: " + json.error;
+        setError(errorMsg);
+        toast.error(errorMsg);
       }
-    } catch (error) {
-      toast.error("An error occurred while fetching data.");
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "An error occurred while fetching data.";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -202,6 +210,18 @@ export default function DepartmentsPage() {
       columnFilters,
     },
   });
+
+  if (error) {
+    return (
+      <AppPage>
+        <ErrorState
+          title="Failed to load departments"
+          message={error}
+          onRetry={fetchDepartments}
+        />
+      </AppPage>
+    );
+  }
 
   if (loading) {
     return <LoadingState message="Loading departments..." />;

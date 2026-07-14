@@ -2,6 +2,7 @@
 
 import { LoadingState } from "@/components/shared/LoadingState";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { DataTableToolbar } from "@/components/shared/DataTableToolbar";
 import { DataTablePagination } from "@/components/shared/DataTablePagination";
 
@@ -37,6 +38,7 @@ type StudentWithDept = Student & { department: { name: string, code: string } };
 export default function StudentsPage() {
   const [data, setData] = useState<StudentWithDept[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -74,6 +76,7 @@ export default function StudentsPage() {
 
   const fetchStudents = async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -91,7 +94,9 @@ export default function StudentsPage() {
       setData(json.data);
       setTotalPages(json.meta.totalPages);
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Failed to fetch students");
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch students";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -235,49 +240,57 @@ export default function StudentsPage() {
         </Select>
       </DataTableToolbar>
 
-      <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-                <TableRow>
-                    <TableCell colSpan={columns.length}><LoadingState message="Loading students..." /></TableCell>
-                </TableRow>
-            ) : table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+      {error ? (
+        <ErrorState
+          title="Failed to load students"
+          message={error}
+          onRetry={fetchStudents}
+        />
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  <EmptyState title="No students found" description="There are no students matching your search criteria." />
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                  <TableRow>
+                      <TableCell colSpan={columns.length}><LoadingState message="Loading students..." /></TableCell>
+                  </TableRow>
+              ) : table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    <EmptyState title="No students found" description="There are no students matching your search criteria." />
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
       <DataTablePagination
         currentPage={page}
         totalPages={totalPages}

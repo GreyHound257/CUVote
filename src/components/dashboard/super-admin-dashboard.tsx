@@ -10,29 +10,45 @@ import { Users, Building2, Vote, ShieldCheck, Activity, Printer } from "lucide-r
 import { SearchFilter } from "./search-filter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ErrorState } from "@/components/shared/ErrorState";
 
 export function SuperAdminDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const COLORS = useChartColors();
 
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/dashboard/super-admin");
+      const resData = await res.json();
+      if (resData.error) throw new Error(resData.error);
+      setData(resData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/dashboard/super-admin")
-      .then(res => res.json())
-      .then(resData => {
-        setData(resData);
-        setLoading(false);
-      });
+    fetchData();
   }, []);
 
   if (loading) {
     return <div className="p-4 space-y-4"><Skeleton className="h-32 w-full" /><Skeleton className="h-64 w-full" /></div>;
   }
 
-  if (!data || data.error) {
-    return <div className="text-red-500 p-4">Error loading dashboard data.</div>;
+  if (error) {
+    return <ErrorState title="Failed to load dashboard" message={error} onRetry={fetchData} />;
+  }
+
+  if (!data) {
+    return <ErrorState title="Failed to load dashboard" message="No data received" onRetry={fetchData} />;
   }
 
   const { metrics, analytics, system } = data;

@@ -3,6 +3,7 @@
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Loader2 } from "lucide-react";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { DataTableToolbar } from "@/components/shared/DataTableToolbar";
 import { DataTablePagination } from "@/components/shared/DataTablePagination";
 import { AppPage } from "@/components/shared/AppPage";
@@ -76,6 +77,7 @@ export default function UsersPage() {
   const { data: session } = useSession();
   const [data, setData] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [userToReset, setUserToReset] = useState<User | null>(null);
@@ -90,16 +92,22 @@ export default function UsersPage() {
   }, []);
 
   const fetchUsers = async () => {
+    setError(null);
+    setLoading(true);
     try {
       const res = await fetch("/api/users");
       const json = await res.json();
       if (json.success) {
         setData(json.data);
       } else {
-        toast.error("Failed to fetch users: " + json.error);
+        const errorMsg = "Failed to fetch users: " + json.error;
+        setError(errorMsg);
+        toast.error(errorMsg);
       }
-    } catch (error) {
-      toast.error("An error occurred while fetching data.");
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "An error occurred while fetching data.";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -247,6 +255,18 @@ return (
       columnFilters,
     },
   });
+
+  if (error) {
+    return (
+      <AppPage>
+        <ErrorState
+          title="Failed to load users"
+          message={error}
+          onRetry={fetchUsers}
+        />
+      </AppPage>
+    );
+  }
 
   if (loading) {
     return <LoadingState message="Loading users..." />;
