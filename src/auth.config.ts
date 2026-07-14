@@ -34,17 +34,27 @@ export const authConfig = {
     "/reports",
     "/audit-logs",
     "/vote",
+    "/announcements",
+    "/activity",
+    "/notifications",
   ];
       const isProtectedRoute = protectedPaths.some(path => nextUrl.pathname.startsWith(path));
 
       const isOnLogin = nextUrl.pathname.startsWith("/login");
       const isSetup = nextUrl.pathname.startsWith("/setup");
       const isOnboarding = nextUrl.pathname.startsWith("/onboarding");
+      const isForgotPassword = nextUrl.pathname.startsWith("/forgot-password");
+      const isResetPassword = nextUrl.pathname.startsWith("/reset-password");
 
       if (isProtectedRoute) {
         if (isLoggedIn) return true;
         return false; // Redirect unauthenticated users to login page
-      } else if (isLoggedIn && (isOnLogin || isSetup || isOnboarding)) {
+      } else if (
+        isLoggedIn &&
+        (isOnLogin || isSetup || isOnboarding) &&
+        !isForgotPassword &&
+        !isResetPassword
+      ) {
         return Response.redirect(new URL("/dashboard", nextUrl));
       }
 

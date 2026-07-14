@@ -81,6 +81,7 @@ model User {
   auditLogs AuditLog[]
   notifications          Notification[]
   notificationPreference NotificationPreference?
+  announcementsAuthored  Announcement[] @relation("AnnouncementAuthor")
 
   department Department? @relation("DepartmentAdmins", fields: [departmentId], references: [id], onDelete: SetNull)
 
@@ -124,6 +125,43 @@ model Department {
 
   students  Student[]
   elections Election[]
+  electionTemplates ElectionTemplate[]
+  announcements Announcement[]
+}
+
+// -----------------------------------------------------------------------------
+// System Configuration
+// -----------------------------------------------------------------------------
+
+enum AcademicSessionStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model AcademicSession {
+  id        String                @id @default(cuid())
+  name      String                @unique // e.g. "2026/2027"
+  startsOn  DateTime?
+  endsOn    DateTime?
+  isCurrent Boolean               @default(false)
+  status    AcademicSessionStatus @default(ACTIVE)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  elections Election[]
+
+  @@index([isCurrent])
+  @@index([status])
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@index([key])
 }
 
 model AuditLog {
@@ -193,22 +231,28 @@ enum ElectionStatus {
 }
 
 model Election {
-  id           String         @id @default(cuid())
-  title        String
-  description  String?
-  departmentId String
-  status       ElectionStatus @default(DRAFT)
-  startTime    DateTime?
-  endTime      DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id                String         @id @default(cuid())
+  title             String
+  description       String?
+  departmentId      String
+  academicSessionId String?
+  status            ElectionStatus @default(DRAFT)
+  startTime         DateTime?
+  endTime           DateTime?
+  /// Empty array = all levels eligible. Otherwise only listed levels (e.g. 100, 200).
+  eligibilityLevels Int[]          @default([])
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   department        Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  academicSession   AcademicSession?   @relation(fields: [academicSessionId], references: [id], onDelete: SetNull)
   positions         Position[]
   candidates        Candidate[]
   voteRecords       VoteRecord[]
   anonymizedBallots AnonymizedBallot[]
   electionResults   ElectionResult[]
+
+  @@index([academicSessionId])
 }
 
 model Position {
@@ -227,6 +271,24 @@ model Position {
   electionResults   ElectionResult[]
 }
 
+/// Reusable election structures (positions + level eligibility) for future sessions.
+model ElectionTemplate {
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  departmentId      String?
+  createdById       String
+  positionsJson     Json
+  eligibilityLevels Int[]    @default([])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@index([departmentId])
+  @@index([createdById])
+}
+
 // -----------------------------------------------------------------------------
 // Candidate Management Module
 // -----------------------------------------------------------------------------
@@ -241,16 +303,17 @@ enum CandidateStatus {
 }
 
 model Candidate {
-  id         String          @id @default(cuid())
-  studentId  String
-  electionId String
-  positionId String
-  status     CandidateStatus @default(PENDING_REVIEW)
-  manifesto  String?         @db.Text
-  slogan     String?
-  photoUrl   String?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id              String          @id @default(cuid())
+  studentId       String
+  electionId      String
+  positionId      String
+  status          CandidateStatus @default(PENDING_REVIEW)
+  manifesto       String?         @db.Text
+  slogan          String?
+  visionStatement String?         @db.Text
+  photoUrl        String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   student           Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
   election          Election           @relation(fields: [electionId], references: [id], onDelete: Cascade)
@@ -338,4 +401,41 @@ model NotificationPreference {
   channels Json
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// Announcements / Communications
+// -----------------------------------------------------------------------------
+
+enum AnnouncementAudience {
+  EVERYONE
+  STUDENTS
+  ADMINS
+  DEPARTMENT
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Announcement {
+  id           String               @id @default(cuid())
+  title        String
+  body         String               @db.Text
+  audience     AnnouncementAudience @default(EVERYONE)
+  departmentId String?
+  status       AnnouncementStatus   @default(DRAFT)
+  createdById  String
+  publishedAt  DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  createdBy  User        @relation("AnnouncementAuthor", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([status, publishedAt])
+  @@index([departmentId])
+  @@index([audience])
 }
