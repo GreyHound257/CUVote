@@ -2,7 +2,8 @@
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingState } from "@/components/shared/LoadingState";
-
+import { DataTableToolbar } from "@/components/shared/DataTableToolbar";
+import { DataTablePagination } from "@/components/shared/DataTablePagination";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -23,7 +24,6 @@ import { AppPage } from "@/components/shared/AppPage";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { LinkButton } from "@/components/ui/link-button";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -219,16 +219,11 @@ export default function DepartmentsPage() {
         }
       />
 
-      <div className="flex items-center">
-        <Input
-          placeholder="Filter by name..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm rounded-full focus-visible:ring-primary/20"
-        />
-      </div>
+      <DataTableToolbar
+        search={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+        onSearchChange={(val) => table.getColumn("name")?.setFilterValue(val)}
+        searchPlaceholder="Filter by name..."
+      />
 
       <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
         <Table>
@@ -274,24 +269,11 @@ export default function DepartmentsPage() {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Next
-        </Button>
-      </div>
+      <DataTablePagination
+        currentPage={table.getState().pagination.pageIndex + 1}
+        totalPages={Math.ceil(data.length / table.getState().pagination.pageSize)}
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+      />
     </AppPage>
   );
 }

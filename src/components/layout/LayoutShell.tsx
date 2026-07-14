@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { TopNav } from "@/components/layout/TopNav";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { cn } from "@/lib/utils";
 
 function isBareLayout(pathname: string) {
@@ -32,7 +33,10 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
           )}
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
-          <div className="relative">{children}</div>
+          <div className="relative">
+            <Breadcrumbs />
+            {children}
+          </div>
         </main>
       </div>
     </div>

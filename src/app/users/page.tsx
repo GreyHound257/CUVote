@@ -3,7 +3,10 @@
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Loader2 } from "lucide-react";
 import { LoadingState } from "@/components/shared/LoadingState";
-
+import { DataTableToolbar } from "@/components/shared/DataTableToolbar";
+import { DataTablePagination } from "@/components/shared/DataTablePagination";
+import { AppPage } from "@/components/shared/AppPage";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -21,7 +24,6 @@ import {
 import { format } from "date-fns";
 import { Routes } from "@/constants";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -250,26 +252,24 @@ return (
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-        {session?.user?.role === "SUPER_ADMIN" && (
-           <Button onClick={() => router.push(`/users/new`)}>Create User</Button>
-        )}
-      </div>
+    <AppPage>
+      <PageHeader
+        title="Users"
+        description="Manage platform users and their permissions."
+        action={
+          session?.user?.role === "SUPER_ADMIN" && (
+            <Button onClick={() => router.push(`/users/new`)} className="rounded-full">Create User</Button>
+          )
+        }
+      />
 
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter by email..."
-          value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("email")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-      </div>
+      <DataTableToolbar
+        search={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
+        onSearchChange={(val) => table.getColumn("email")?.setFilterValue(val)}
+        searchPlaceholder="Filter by email..."
+      />
 
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -313,24 +313,11 @@ return (
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Next
-        </Button>
-      </div>
+      <DataTablePagination
+        currentPage={table.getState().pagination.pageIndex + 1}
+        totalPages={Math.ceil(data.length / table.getState().pagination.pageSize)}
+        onPageChange={(page) => table.setPageIndex(page - 1)}
+      />
 
       <Dialog open={!!userToReset} onOpenChange={(open) => !open && setUserToReset(null)}>
         <DialogContent>
@@ -381,6 +368,6 @@ return (
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }
