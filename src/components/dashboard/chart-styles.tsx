@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 type ChartTooltipPayload = {
   name?: string;
   value?: number | string;
@@ -18,21 +20,47 @@ export const chartTooltipContentStyle = {
 
 export const chartTooltipLabelStyle = {
   color: "var(--foreground)",
-  fontWeight: 500,
+  fontWeight: 50,
 };
 
 export const chartTooltipItemStyle = {
   color: "var(--muted-foreground)",
 };
 
-// Color palette using CSS variables
-export const CHART_COLORS = [
-  "var(--primary)",
-  "var(--secondary)",
-  "var(--accent)",
-  "var(--destructive)",
-  "var(--muted)",
-];
+// Helper to get computed style from CSS custom properties
+export const getComputedColor = (cssVar: string): string => {
+  if (typeof window === "undefined") return "#000";
+  const computed = getComputedStyle(document.documentElement);
+  return computed.getPropertyValue(cssVar).trim() || "#000";
+};
+
+export const useChartColors = () => {
+  const [colors, setColors] = useState<string[]>([]);
+
+  const updateColors = () => {
+    const newColors = [
+      getComputedColor("--primary"),
+      getComputedColor("--secondary"),
+      getComputedColor("--accent"),
+      getComputedColor("--destructive"),
+      getComputedColor("--muted"),
+    ];
+    setColors(newColors);
+  };
+
+  useEffect(() => {
+    updateColors();
+    
+    const observer = new MutationObserver(updateColors);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "style"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  return colors;
+};
 
 export function ChartTooltipContent({
   active,

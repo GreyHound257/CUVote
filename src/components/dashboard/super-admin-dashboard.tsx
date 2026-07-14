@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ChartTooltipContent, CHART_COLORS } from "./chart-styles";
+import { ChartTooltipContent, useChartColors } from "./chart-styles";
 import { TurnoutLineChart } from "./TurnoutLineChart";
 import { Users, Building2, Vote, ShieldCheck, Activity, Printer } from "lucide-react";
 import { SearchFilter } from "./search-filter";
@@ -16,6 +16,7 @@ export function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const COLORS = useChartColors();
 
   useEffect(() => {
     fetch("/api/dashboard/super-admin")

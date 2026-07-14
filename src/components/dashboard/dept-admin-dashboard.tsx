@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { ChartTooltipContent, CHART_COLORS } from "./chart-styles";
+import { ChartTooltipContent, useChartColors } from "./chart-styles";
 import { TurnoutLineChart } from "./TurnoutLineChart";
 import { Users, Vote, UserCheck, Activity, Printer } from "lucide-react";
 import { SearchFilter } from "./search-filter";
@@ -18,6 +18,7 @@ export function DeptAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const COLORS = useChartColors();
 
   useEffect(() => {
     fetch("/api/dashboard/dept-admin")
