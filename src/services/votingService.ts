@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ElectionStatus, Prisma } from "@prisma/client";
 import { logAuditAction } from "@/lib/audit";
+import { isLevelEligible } from "@/lib/electionEligibility";
 
 export class VotingService {
   /**
@@ -8,7 +9,12 @@ export class VotingService {
    */
   static async getActiveElections(studentId: string, departmentId: string) {
     const student = await prisma.student.findUnique({ where: { id: studentId } });
-    if (!student || !student.isEligible || student.status !== "ACTIVE" || student.departmentId !== departmentId) {
+    if (
+      !student ||
+      !student.isEligible ||
+      student.status !== "ACTIVE" ||
+      student.departmentId !== departmentId
+    ) {
       return [];
     }
 
@@ -27,6 +33,10 @@ export class VotingService {
 
     const results = [];
     for (const election of elections) {
+      if (!isLevelEligible(election.eligibilityLevels, student.level)) {
+        continue;
+      }
+
       const voteRecord = await prisma.voteRecord.findUnique({
         where: {
           electionId_studentId: {
@@ -51,7 +61,12 @@ export class VotingService {
    */
   static async getBallot(electionId: string, studentId: string, departmentId: string) {
     const student = await prisma.student.findUnique({ where: { id: studentId } });
-    if (!student || !student.isEligible || student.status !== "ACTIVE" || student.departmentId !== departmentId) {
+    if (
+      !student ||
+      !student.isEligible ||
+      student.status !== "ACTIVE" ||
+      student.departmentId !== departmentId
+    ) {
       throw new Error("Student is not eligible to vote.");
     }
 
@@ -68,17 +83,25 @@ export class VotingService {
                 student: {
                   select: {
                     fullName: true,
-                  }
-                }
-              }
+                  },
+                },
+              },
             },
           },
         },
       },
     });
 
-    if (!election || election.status !== ElectionStatus.VOTING_OPEN || election.departmentId !== departmentId) {
+    if (
+      !election ||
+      election.status !== ElectionStatus.VOTING_OPEN ||
+      election.departmentId !== departmentId
+    ) {
       throw new Error("Election is not active or not available for your department.");
+    }
+
+    if (!isLevelEligible(election.eligibilityLevels, student.level)) {
+      throw new Error("Your level is not eligible for this election.");
     }
 
     const voteRecord = await prisma.voteRecord.findUnique({
@@ -92,7 +115,7 @@ export class VotingService {
 
     const hasVotedInElection = !!voteRecord;
 
-    const positionsToVote = election.positions.map(p => ({
+    const positionsToVote = election.positions.map((p) => ({
       ...p,
       hasVoted: hasVotedInElection,
     }));
@@ -141,6 +164,10 @@ export class VotingService {
             throw new Error("Student department does not match election department.");
           }
 
+          if (!isLevelEligible(election.eligibilityLevels, student.level)) {
+            throw new Error("Your level is not eligible for this election.");
+          }
+
           const now = new Date();
           if (election.startTime && now < election.startTime) {
             throw new Error("Election has not started yet.");
@@ -162,6 +189,39 @@ export class VotingService {
             throw new Error("DUPLICATE_VOTE");
           }
 
+          // One vote per position with approved candidates; ignore empty positions
+          const positions = await tx.position.findMany({
+            where: { electionId },
+            include: {
+              candidates: {
+                where: { status: "APPROVED" },
+                select: { id: true },
+              },
+            },
+          });
+
+          const voteablePositions = positions.filter((p) => p.candidates.length > 0);
+          const positionIds = new Set(voteablePositions.map((p) => p.id));
+          const submittedPositionIds = votes.map((v) => v.positionId);
+
+          if (new Set(submittedPositionIds).size !== submittedPositionIds.length) {
+            throw new Error("Duplicate position selections are not allowed.");
+          }
+
+          if (submittedPositionIds.length !== voteablePositions.length) {
+            throw new Error("You must select exactly one candidate for every position.");
+          }
+
+          for (const vote of votes) {
+            if (!positionIds.has(vote.positionId)) {
+              throw new Error("Invalid position on ballot.");
+            }
+            const position = voteablePositions.find((p) => p.id === vote.positionId)!;
+            if (!position.candidates.some((c) => c.id === vote.candidateId)) {
+              throw new Error("Selected candidate is not approved for that position.");
+            }
+          }
+
           await tx.voteRecord.create({
             data: {
               studentId,
@@ -178,7 +238,6 @@ export class VotingService {
           });
         },
         {
-          // Neon pooler needs more time to acquire a dedicated connection for interactive txs.
           maxWait: 15_000,
           timeout: 20_000,
         }

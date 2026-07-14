@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { VotingService } from "@/services/votingService";
 import { z } from "zod";
+import { enforceRateLimit, parseJsonBody, RequestBodyError } from "@/lib/request";
 
 const submitVoteSchema = z.object({
   electionId: z.string().min(1, "Election ID is required"),
@@ -17,12 +18,15 @@ const submitVoteSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const limited = enforceRateLimit(req, "VOTE_SUBMIT");
+    if (limited) return limited;
+
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
+    const body = await parseJsonBody(req);
     const parsed = submitVoteSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -42,12 +46,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Student record not found" }, { status: 404 });
     }
 
+    const userLimited = enforceRateLimit(req, "VOTE_SUBMIT", `user:${session.user.id}`);
+    if (userLimited) return userLimited;
+
     const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("remote-addr") || undefined;
 
     await VotingService.submitVote(electionId, student.id, votes, ipAddress);
 
     return NextResponse.json({ success: true, message: "Vote submitted successfully" });
   } catch (error: unknown) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ error: error.message }, { status: 413 });
+    }
     logger.error("Error in submit vote API:", error);
     const message = error instanceof Error ? error.message : "Internal Server Error";
     const isDuplicateVote = message.includes("already voted");
