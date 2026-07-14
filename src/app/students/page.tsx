@@ -2,6 +2,8 @@
 
 import { LoadingState } from "@/components/shared/LoadingState";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { DataTableToolbar } from "@/components/shared/DataTableToolbar";
+import { DataTablePagination } from "@/components/shared/DataTablePagination";
 
 import { logger } from "@/utils/logger";
 
@@ -11,10 +13,8 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getPaginationRowModel,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -206,14 +206,11 @@ export default function StudentsPage() {
         }
       />
 
-      <div className="flex items-center gap-4">
-        <Input
-          placeholder="Search by name or matric no..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm rounded-full focus-visible:ring-primary/20"
-        />
-
+      <DataTableToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by name or matric no..."
+      >
         <Select value={departmentId} onValueChange={(val) => setDepartmentId(val || "all")}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="All Departments" />
@@ -236,7 +233,7 @@ export default function StudentsPage() {
             <SelectItem value="false">Ineligible</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </DataTableToolbar>
 
       <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
         <Table>
@@ -281,25 +278,11 @@ export default function StudentsPage() {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <span className="text-sm text-gray-500 mr-4">Page {page} of {totalPages || 1}</span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage(p => Math.max(1, p - 1))}
-          disabled={page === 1}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-          disabled={page >= totalPages}
-        >
-          Next
-        </Button>
-      </div>
+      <DataTablePagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
 
       <StudentDetailsDialog
         student={selectedStudent}
