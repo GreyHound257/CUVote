@@ -2,9 +2,7 @@
 
 import { LoadingState } from "@/components/shared/LoadingState";
 import { EmptyState } from "@/components/shared/EmptyState";
-
 import { logger } from "@/utils/logger";
-
 import { useEffect, useState, useCallback } from "react";
 import {
   Table,
@@ -24,26 +22,61 @@ import { LinkButton } from "@/components/ui/link-button";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+interface AcademicSession {
+  id: string;
+  name: string;
+}
+
+interface CandidateInfo {
+  id: string;
+  photoUrl?: string;
+  status: CandidateStatus;
+  student: { fullName: string; matricNo?: string };
+  election: { title: string };
+  position: { title: string };
+}
+
 export function CandidateListBoard({ showApprovalQueue = false }: { showApprovalQueue?: boolean }) {
-  interface CandidateInfo {
-    id: string;
-    photoUrl?: string;
-    status: CandidateStatus;
-    student: { fullName: string; matricNo?: string };
-    election: { title: string };
-    position: { title: string };
-  }
   const [candidates, setCandidates] = useState<CandidateInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>(showApprovalQueue ? "PENDING_REVIEW" : "ALL");
+  
+  // Filters
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>(showApprovalQueue ? "PENDING_REVIEW" : "ALL");
+  const [sessionFilter, setSessionFilter] = useState<string>("ALL");
+  
+  // Academic Sessions Data
+  const [academicSessions, setAcademicSessions] = useState<AcademicSession[]>([]);
+
+  // Fetch Academic Sessions for the dropdown
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const res = await fetch("/api/academic-sessions");
+        if (res.ok) {
+          const json = await res.json();
+          // Adjust based on your API response structure (e.g., json.data or json)
+          setAcademicSessions(json.data || json);
+        }
+      } catch (err) {
+        logger.error("Failed to load academic sessions");
+      }
+    };
+    fetchSessions();
+  }, []);
 
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
     let url = `/api/candidates?search=${encodeURIComponent(search)}`;
+    
     if (statusFilter !== "ALL") {
       url += `&status=${statusFilter}`;
     }
+    
+    if (sessionFilter !== "ALL") {
+      url += `&academicSessionId=${sessionFilter}`;
+    }
+
     try {
       const res = await fetch(url);
       const data = await res.json();
@@ -52,12 +85,11 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
       logger.error(err instanceof Error ? err.message : String(err));
     }
     setLoading(false);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, sessionFilter]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCandidates();
-  }, [statusFilter, search, fetchCandidates]);
+  }, [statusFilter, search, sessionFilter, fetchCandidates]);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
@@ -81,16 +113,17 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
 
   return (
     <div className="space-y-4">
-      <div className="mb-4 flex gap-4">
+      <div className="mb-4 flex flex-wrap gap-4">
         <Input
           placeholder="Search by student name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm rounded-full focus-visible:ring-primary/20"
         />
+        
         {!showApprovalQueue && (
           <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || "ALL")}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] rounded-full">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -103,6 +136,21 @@ export function CandidateListBoard({ showApprovalQueue = false }: { showApproval
             </SelectContent>
           </Select>
         )}
+
+        {/* NEW: Academic Session Filter Dropdown */}
+        <Select value={sessionFilter} onValueChange={(val) => setSessionFilter(val || "ALL")}>
+          <SelectTrigger className="w-[180px] rounded-full">
+            <SelectValue placeholder="Filter by session" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Sessions</SelectItem>
+            {academicSessions.map((session) => (
+              <SelectItem key={session.id} value={session.id}>
+                {session.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">

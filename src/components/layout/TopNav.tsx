@@ -48,7 +48,7 @@ function NotificationCenter() {
         body: JSON.stringify(body),
       });
       // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchNotifications();
+      fetchNotifications();
     } catch {
       logger.error("Failed to mark notifications as read");
     }
@@ -56,14 +56,19 @@ function NotificationCenter() {
 
   return (
     <Popover>
-      <PopoverTrigger render={<Button variant="ghost" size="icon" className="relative min-w-[44px] min-h-[44px] hover:bg-accent/80"><span className="sr-only">Notifications</span></Button>}>
-        <BellIcon className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <Badge variant="destructive" className="absolute -top-1 -right-1 px-1.5 min-w-5 h-5 flex items-center justify-center rounded-full text-[10px]">
-            {unreadCount}
-          </Badge>
-        )}
-      </PopoverTrigger>
+      <PopoverTrigger 
+        render={
+          <Button variant="ghost" size="icon" className="relative min-w-[44px] min-h-[44px] hover:bg-accent/80">
+            <span className="sr-only">Notifications</span>
+            <BellIcon className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="absolute -top-1 -right-1 px-1.5 min-w-5 h-5 flex items-center justify-center rounded-full text-[10px]">
+                {unreadCount}
+              </Badge>
+            )}
+          </Button>
+        } 
+      />
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between p-4 border-b border-border/50">
           <h4 className="font-semibold text-sm">Notifications</h4>

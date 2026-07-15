@@ -24,6 +24,9 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+// Make sure this import path matches where you saved the component!
+import { SearchableStudentInput } from "@/components/layout/SearchableStudentInput"; 
+
 interface Election {
   id: string;
   title: string;
@@ -31,19 +34,13 @@ interface Election {
   positions: { id: string; title: string }[];
 }
 
-interface Student {
-  id: string;
-  fullName: string;
-  matricNo: string;
-  departmentId: string;
-}
-
 export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  
+  // We only need to store elections now; students are handled by the combobox
   const [elections, setElections] = useState<Election[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
 
   const [electionId, setElectionId] = useState<string | null>(null);
   const [positionId, setPositionId] = useState<string | null>(null);
@@ -58,57 +55,34 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
     [elections, electionId]
   );
 
-  const eligibleStudents = useMemo(() => {
-    if (!selectedElection) return students;
-    return students.filter((s) => s.departmentId === selectedElection.departmentId);
-  }, [students, selectedElection]);
-
-  const selectedStudent = useMemo(
-    () => eligibleStudents.find((s) => s.id === studentId) ?? null,
-    [eligibleStudents, studentId]
-  );
-
   const selectedPosition = useMemo(
     () => selectedElection?.positions.find((p) => p.id === positionId) ?? null,
     [selectedElection, positionId]
   );
 
+  // Fetch only elections on mount
   useEffect(() => {
     if (!open) return;
 
     let cancelled = false;
     setLoadingData(true);
 
-    Promise.all([
-      fetch("/api/elections").then(async (r) => {
+    fetch("/api/elections")
+      .then(async (r) => {
         const json = await r.json();
         if (!r.ok) throw new Error(json.error || "Failed to load elections");
         return json;
-      }),
-      fetch("/api/students?limit=200").then(async (r) => {
-        const json = await r.json();
-        if (!r.ok) throw new Error(json.error || "Failed to load students");
-        return json;
-      }),
-    ])
-      .then(([electionsRes, studentsRes]) => {
+      })
+      .then((electionsRes) => {
         if (cancelled) return;
 
-        const electionList: Election[] = Array.isArray(electionsRes.data)
-          ? electionsRes.data
-          : [];
+        // Extract the array whether it's directly in .data or nested in .data.data
+        const rawElections = electionsRes.data?.data || electionsRes.data;
+        const electionList: Election[] = Array.isArray(rawElections) ? rawElections : [];
         setElections(electionList);
-
-        const studentList: Student[] = Array.isArray(studentsRes.data)
-          ? studentsRes.data
-          : [];
-        setStudents(studentList);
 
         if (electionList.length === 0) {
           toast.message("No elections found. Create an election first.");
-        }
-        if (studentList.length === 0) {
-          toast.message("No students found. Import or create students first.");
         }
       })
       .catch((err: unknown) => {
@@ -124,15 +98,10 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
     };
   }, [open]);
 
+  // Clear student selection if the election (and therefore department) changes
   useEffect(() => {
-    // Clear student if they don't belong to the newly selected election's department
-    if (studentId && selectedElection) {
-      const stillEligible = students.some(
-        (s) => s.id === studentId && s.departmentId === selectedElection.departmentId
-      );
-      if (!stillEligible) setStudentId(null);
-    }
-  }, [selectedElection, studentId, students]);
+    setStudentId(null);
+  }, [electionId]);
 
   const resetForm = () => {
     setElectionId(null);
@@ -167,7 +136,6 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
       });
       const json = await res.json();
 
-      // API returns { success: true, data } or a candidate with id
       if (res.ok && (json.success || json.id || json.data?.id)) {
         toast.success("Candidate nominated successfully");
         setOpen(false);
@@ -191,9 +159,13 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
         if (!next) resetForm();
       }}
     >
-      <DialogTrigger render={<Button className="rounded-full" />}>
-        <UserPlus className="mr-2 h-4 w-4" /> Nominate Candidate
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button className="rounded-full">
+            <UserPlus className="mr-2 h-4 w-4" /> Nominate Candidate
+          </Button>
+        }
+      />
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
@@ -205,7 +177,7 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
 
         {loadingData ? (
           <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading elections and students...
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading elections...
           </div>
         ) : (
           <div className="space-y-4 py-2">
@@ -263,47 +235,18 @@ export function CandidateNominationDialog({ onSuccess }: { onSuccess: () => void
               </Select>
             </div>
 
+            {/* This replaces the old native <Select> logic */}
             <div className="space-y-2">
               <Label>Student</Label>
-              <Select
+              <SearchableStudentInput
                 value={studentId}
-                onValueChange={setStudentId}
+                onChange={setStudentId}
+                departmentId={selectedElection?.departmentId}
                 disabled={!electionId}
-              >
-                <SelectTrigger className="w-full rounded-full">
-                  <SelectValue
-                    placeholder={
-                      !electionId
-                        ? "Select an election first"
-                        : eligibleStudents.length === 0
-                          ? "No eligible students"
-                          : "Select student"
-                    }
-                  >
-                    {selectedStudent
-                      ? `${selectedStudent.fullName} (${selectedStudent.matricNo})`
-                      : null}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="z-[200]">
-                  {eligibleStudents.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">
-                      {electionId
-                        ? "No students in this election's department"
-                        : "Select an election first"}
-                    </div>
-                  ) : (
-                    eligibleStudents.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.fullName} ({s.matricNo})
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              />
               {electionId && (
                 <p className="text-xs text-muted-foreground">
-                  Showing {eligibleStudents.length} student(s) from the election&apos;s department
+                  Searching students in the election&apos;s department
                 </p>
               )}
             </div>

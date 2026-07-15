@@ -222,13 +222,22 @@ export class CandidateService {
     positionId?: string;
     status?: CandidateStatus;
     search?: string;
+    academicSessionId?: string;
     page?: number;
     limit?: number;
   }) {
-    const { page = 1, limit = 50, search, ...exactFilters } = filters;
+    const { page = 1, limit = 50, search, academicSessionId, ...exactFilters } = filters;
     const skip = (page - 1) * limit;
 
     const where: Prisma.CandidateWhereInput = { ...exactFilters };
+
+    // Apply Academic Session filter via the election relation
+    if (academicSessionId) {
+      where.election = {
+        ...where.election,
+        academicSessionId: academicSessionId,
+      };
+    }
 
     if (search) {
       where.student = {

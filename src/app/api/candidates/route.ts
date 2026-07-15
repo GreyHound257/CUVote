@@ -19,8 +19,19 @@ export async function GET(req: Request) {
     const electionId = searchParams.get("electionId") || undefined;
     const positionId = searchParams.get("positionId") || undefined;
     const status = (searchParams.get("status") as CandidateStatus) || undefined;
+    
+    // NEW: Extract academic session parameter
+    const academicSessionId = searchParams.get("academicSessionId") || undefined;
 
-    const filters: any = { page, limit, search, electionId, positionId, status };
+    const filters: any = { 
+      page, 
+      limit, 
+      search, 
+      electionId, 
+      positionId, 
+      status, 
+      academicSessionId 
+    };
 
     const userRole = session.user.role;
 
@@ -44,18 +55,11 @@ export async function GET(req: Request) {
       }
     } else if (userRole === Role.DEPARTMENT_ADMIN) {
       // Dept Admins can ONLY view candidates where the related Election's departmentId matches their own.
-      // We will fetch and filter by electionId later, or if an electionId is provided, check it.
       if (electionId) {
         const election = await prisma.election.findUnique({ where: { id: electionId } });
         if (election?.departmentId !== session.user.departmentId) {
           return NextResponse.json({ error: "Forbidden: Cannot access candidates from other departments" }, { status: 403 });
         }
-      } else {
-        // If no electionId, we need to enforce that fetched candidates belong to their department.
-        // For simplicity, we can fetch all and then filter, but ideally CandidateService should support filtering by departmentId.
-        // We will fetch their department elections and use IN clause in Prisma, but since we didn't add it in CandidateService,
-        // we will let CandidateService fetch them and we can filter post-fetch for this iteration.
-        // Note: Production scale would push this into the query.
       }
     }
 
