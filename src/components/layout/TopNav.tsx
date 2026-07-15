@@ -134,7 +134,7 @@ export function TopNav() {
       <div className="flex w-full md:w-auto items-center justify-between">
         <div className="font-bold tracking-tight flex items-center">
           <Link href={Routes.HOME} className="hover:text-primary transition-colors flex items-center">
-            <img src="/favicon.ico" alt="CU Logo" className="h-6 w-6" />
+            <img src="/favicon.ico" alt="CU Logo" className="h-10 w-10" />
             <span className="text-primary text-3xl font-extrabold">CU</span><span className="text-[oklch(0.769_0.159_43)] text-3xl font-extrabold">Vote</span>
           </Link>
         </div>

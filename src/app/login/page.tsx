@@ -100,7 +100,7 @@ export default function LoginPage() {
                 <Label htmlFor="password">Password</Label>
                 <Link
                   href={Routes.FORGOT_PASSWORD}
-                  className="text-xs font-medium text-primary hover:underline"
+                  className="text-xs font-medium text-[#7643c2] hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -128,11 +128,11 @@ export default function LoginPage() {
           <p className="mt-6 space-y-2 text-center text-sm text-muted-foreground">
             <span className="block">
               New account?{" "}
-              <Link href={Routes.ONBOARDING} className="font-medium text-primary hover:underline">
+              <Link href={Routes.ONBOARDING} className="font-medium text-[#7643c2] hover:underline">
                 Set your password
               </Link>
             </span>
-            <Link href={Routes.HOME} className="text-primary hover:underline">
+            <Link href={Routes.HOME} className="text-[#7643c2] hover:underline">
               ← Back to home
             </Link>
           </p>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LinkButton } from "@/components/ui/link-button";
 import { Routes } from "@/constants";
 import { Vote, ShieldCheck, BarChart3, Lock } from "lucide-react";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 const features = [
   {
@@ -30,12 +31,15 @@ export default function LandingPage() {
 
       <header className="relative z-10 flex items-center justify-between border-b border-border/50 bg-background/80 px-6 py-4 backdrop-blur-md">
         <Link href={Routes.HOME} className="text-3xl font-extrabold tracking-tight hover:text-primary transition-colors flex items-center">
-          <img src="/favicon.ico" alt="CU Logo" className="h-6 w-6" />
+          <img src="/favicon.ico" alt="CU Logo" className="h-10 w-10" />
           <span className="text-primary">CU</span><span className="text-[oklch(0.769_0.159_43)]">Vote</span>
         </Link>
-        <LinkButton href={Routes.LOGIN} variant="outline" size="sm">
-          Sign In
-        </LinkButton>
+        <div>
+          <LinkButton href={Routes.LOGIN} variant="outline" size="sm">
+            Sign In
+          </LinkButton>
+          <ThemeToggle />
+        </div>
       </header>
 
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-16">
