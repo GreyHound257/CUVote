@@ -35,20 +35,6 @@ export async function GET(req: NextRequest) {
       filters.departmentId = session.user.departmentId;
     }
 
-    // --- Temporary Debug Snippet ---
-    console.log("--- DEBUG: GET /api/elections ---");
-    console.log("Session User Role:", session.user.role);
-    console.log("Filter - Status:", filters.status);
-    console.log("Filter - Department ID:", filters.departmentId);
-    console.log("---------------------------------");
-
-    // Put this right below where you set up the 'filters' object:
-    console.log("=== ELECTION FETCH DEBUG ===");
-    console.log("User Role:", session.user.role);
-    console.log("User Dept ID:", session.user.departmentId);
-    console.log("Incoming Filters:", filters);
-    console.log("============================")
-
     const result = await ElectionService.getElections(filters);
     return successResponse(result);
   } catch (error) {

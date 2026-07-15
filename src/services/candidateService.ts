@@ -232,10 +232,12 @@ export class CandidateService {
     const where: Prisma.CandidateWhereInput = { ...exactFilters };
 
     // Apply Academic Session filter via the election relation
+    // Apply Academic Session filter via the election relation
     if (academicSessionId) {
       where.election = {
-        ...where.election,
-        academicSessionId: academicSessionId,
+        is: {
+          academicSessionId: academicSessionId,
+        },
       };
     }
 
